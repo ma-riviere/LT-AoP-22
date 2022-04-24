@@ -45,7 +45,7 @@ Data and R companion code for (Leroux S., Rodriguez-Duboc A., Arabo A., Basille-
 
 ## 📫 Contact:
 
-For any question, please contact the primary author of the paper, **Rodriguez-Duboc Agalic**:  
+For any question, please contact the primary author of the paper, **Agalic Rodriguez-Duboc**:  
 <a href="mailto:agalic.rd@gmail.com?subject=Intermittent%20Hypoxia%20and%20Cerebellar%20Development">![Gmail](https://img.shields.io/badge/Gmail-C71610?style=flat-square&labelColor=white&logo=Gmail&logoColor=C71610)</a>
 
 
