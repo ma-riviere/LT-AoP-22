@@ -1,0 +1,233 @@
+```{r include = F, echo = F}
+source("../src/init.R", echo = F)
+```
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# I. Data:
+***
+
+```{r data}
+
+Casp_Act_target <- "Casp-Act"
+
+(Casp_Act_data <- load_Casp_Act(config$data$casp_Act_path))
+
+### Variables:
+
+Casp_Act_responses <- c("Fluo_Norm")
+Casp_Act_predictors <- c("Condition", "Experiment", "Mouse")
+
+Fluo_Norm_name <- "Enzymatic Activity of Caspase 3/7  \n *(Normalized Fluorescence)*"
+
+contrasts(Casp_Act_data$Condition) <- contr.sum
+contrasts(Casp_Act_data$Experiment) <- contr.sum
+```
+
+```{r}
+Casp_Act_data %>% filter_all(any_vars(is.na(.)))
+```
+
+<!------------------------------------------------------------------------------>
+## Correlations:
+***
+
+```{r fig.width = 8}
+corr_matrix_plot(Casp_Act_data, vars = c(Casp_Act_predictors, Casp_Act_responses))
+```
+
+```{r fig.width = 8}
+GGally::ggpairs(
+  Casp_Act_data, columns = c(c("Condition", "Experiment"), Casp_Act_responses), 
+  mapping = aes(color = Condition), lower = list(continuous = "smooth")
+)
+```
+
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# II. Fluo_Norm:
+***
+
+**Normalizing by Normoxia: Hypoxia - Normoxia (within each experiment)**
+
+```{r}
+(Casp_Act_norm_data <- Casp_Act_data 
+ |> group_by(Experiment, Condition)
+ |> mutate(Avg_N = ifelse(Condition == "N", mean(Fluo_Norm), NA))
+ |> group_by(Experiment)
+ |> fill(Avg_N, .direction = "down")
+ |> mutate(Fluo_Norm = Fluo_Norm - Avg_N)
+ |> select(-Avg_N)
+ |> ungroup()
+)
+```
+
+<!------------------------------------------------------------------------------>
+## 1. Data Exploration:
+
+```{r}
+distribution_summary(Casp_Act_norm_data, dvs = Casp_Act_responses, between = c("Condition", "Experiment"))
+```
+
+```{r fig.width = 6}
+hist_plot(Casp_Act_norm_data, var = "Fluo_Norm") + facet_grid(rows = vars(Condition), cols = vars(Experiment))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 2. Models:
+
+### a. Welch t-test:
+
+```{r}
+(Casp_Act_norm_data_agg <- Casp_Act_norm_data |> 
+  group_by(Mouse, Condition) |> 
+  summarize(Fluo_Norm = mean(Fluo_Norm)) |> 
+  ungroup() |> 
+  mutate(dCondition = as.numeric(Condition == "IH")) |> 
+  rowid_to_column("ID")
+)
+```
+
+```{r}
+Casp_Act_mod_norm_agg <- afex::mixed(
+  Fluo_Norm ~ Condition + (0 + dCondition | ID),
+  data = Casp_Act_norm_data_agg,
+  control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.nRE = "ignore"),
+  check_contrasts = F,
+  method = "S",
+  type = 3,
+  test_intercept = FALSE
+)
+
+parameters(Casp_Act_mod_norm_agg$full_model, effects = "fixed", ci_method = "satterthwaite", drop = "Intercept")
+```
+
+Mann-Whitney:
+
+```{r}
+wilcox.test(formula = Fluo_Norm ~ Condition, data = Casp_Act_norm_data_agg, paired = FALSE)
+```
+
+
+### b. GLMM:
+
+```{r}
+Casp_Act_mod_norm <- glmmTMB(
+  Fluo_Norm ~ Condition + (1 | Mouse),
+  family = gaussian("identity"),
+  data = Casp_Act_norm_data,
+  REML = T
+)
+
+parameters::parameters(Casp_Act_mod_norm)
+cat("\n")
+performance::performance(Casp_Act_mod_norm)
+```
+
+
+<!------------------------------------------------------------------------------>
+## 3. Model Diagnostics:
+
+### a. Residuals:
+
+```{r fig.width = 8}
+make_acf_plot(Casp_Act_mod_norm)
+
+performance::check_model(Casp_Act_mod_norm, detrend = TRUE)
+```
+
+
+### b. Predictions:
+
+```{r}
+nsim <- 300
+
+Casp_Act_mod_norm_dharma <- DHARMa::simulateResiduals(Casp_Act_mod_norm, plot = F, n = nsim, seed = getOption("seed"))
+Casp_Act_mod_norm_dharma_t <- Casp_Act_mod_norm_dharma$simulatedResponse |> t()
+```
+
+```{r fig.width = 10}
+ppc_plots(Casp_Act_mod_norm, Casp_Act_mod_norm_dharma_t, term = "Condition")
+```
+
+```{r fig.width = 10}
+ppc_stat_plots(Casp_Act_mod_norm, Casp_Act_mod_norm_dharma_t, term = "Condition")
+```
+
+**Potential outliers:**
+
+```{r}
+insight::get_data(Casp_Act_mod_norm) |> 
+  rownames_to_column("ID") |> 
+  filter(ID %in% DHARMa::outliers(Casp_Act_mod_norm_dharma))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 4. Effects Analysis:
+
+### a. Coefficients:
+
+**All effects (Wald):**
+
+```{r}
+parameters::parameters(
+  Casp_Act_mod_norm, exponentiate = should_exp(Casp_Act_mod_norm), 
+  ci_method = "Kenward", p_adjust = "none", summary = T, digits = 3
+)
+```
+
+**Main effects (Wald):**
+
+```{r}
+car::Anova(Casp_Act_mod_norm, type = 3)
+```
+
+**Main effects (LRT):**
+
+```{r}
+LRT(Casp_Act_mod_norm, pred = "Condition")
+```
+
+
+### b. Marginal Effects:
+
+**Condition:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(Casp_Act_mod_norm), dvs = insight::find_response(Casp_Act_mod_norm), between = "Condition")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(Casp_Act_mod_norm, specs = "Condition", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(Casp_Act_mod_norm, specs = "Condition", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(Casp_Act_mod_norm, specs = "Condition", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 5, fig.height = 8}
+make_signif_boxplot(Casp_Act_mod_norm, xaxis = "Condition") |> 
+  save_png(filename = glue("[{get_model_tag(Casp_Act_mod_norm)}] - [Normalized] Boxplots - by [Condition]"), subfolder = Casp_Act_target, dpi = 600, width = 5, height = 8)
+```
+

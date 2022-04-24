@@ -1,0 +1,1387 @@
+```{r include = F, echo = F}
+source("../src/init.R", echo = F)
+```
+
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# I. Data:
+***
+
+```{r data}
+
+Calb_P12_target <- "Calb-P12"
+
+(Calb_P12_data <- load_Calb_P12(config$data$calb_P12_path))
+
+### Variables:
+
+Calb_P12_responses <- c("N_CC", "A_ML", "A_PC_per_cell", "Vol_PC_per_cell")
+Calb_P12_predictors <- c("Condition", "Z", "Mouse")
+
+N_CC_name <- "Number of Purkinje cell bodies  \n *(per 413x10^(3) µm^(3))*"
+A_ML_name <- "Area of the ML *(10^(-4) µm^(2))*"
+A_PC_per_cell_name <- "Purkinje dendrite area *(10^(-4) µm^(2))*  \n per Purkinje cell body"
+Vol_PC_per_cell_name <- "Purkinje dendrite volume *(10^(-4) µm^(3))*  \n per Purkinje cell body"
+
+contrasts(Calb_P12_data$Condition) <- contr.sum
+contrasts(Calb_P12_data$Z) <- contr.sum
+
+### Averaged data:
+
+Calb_P12_data_agg <- Calb_P12_data |> 
+  group_by(Mouse, Condition) |> 
+  summarize(across(matches(Calb_P12_responses), .fns = \(.x) mean(.x, na.rm = T))) |> 
+  ungroup() |> 
+  mutate(dCondition = as.numeric(Condition == "IH")) |> 
+  rowid_to_column("ID")
+```
+
+```{r}
+Calb_P12_data %>% filter_all(any_vars(is.na(.)))
+```
+
+<!------------------------------------------------------------------------------>
+## Correlations:
+***
+
+```{r fig.width = 8}
+corr_matrix_plot(Calb_P12_data, vars = c(Calb_P12_predictors, Calb_P12_responses))
+```
+
+```{r fig.width = 12}
+GGally::ggpairs(
+  Calb_P12_data, columns = c(Calb_P12_predictors, Calb_P12_responses), 
+  mapping = aes(color = Condition), lower = list(continuous = "smooth")
+)
+```
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# II. N_CC:
+***
+
+<!------------------------------------------------------------------------------>
+## 1. Data Exploration:
+***
+
+<!------------------------------------------------------------------------------>
+### Distributions:
+
+**By Condition:**
+
+```{r}
+distribution_summary(Calb_P12_data, dvs = "N_CC", between = "Condition")
+```
+
+```{r}
+hist_plot(Calb_P12_data, var = "N_CC", facet = "Condition")
+```
+
+**By Z:**
+
+```{r}
+distribution_summary(Calb_P12_data, dvs = "N_CC", between = "Z")
+```
+
+```{r}
+hist_plot(Calb_P12_data, var = "N_CC", facet = "Z")
+```
+
+**By Condition:Z:**
+
+```{r}
+distribution_summary(Calb_P12_data, dvs = "N_CC", between = c("Condition", "Z"))
+```
+
+```{r}
+hist_plot(Calb_P12_data, var = "N_CC") + facet_grid(rows = vars(Z), cols = vars(Condition))
+```
+
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+## 2. Models:
+***
+
+<!------------------------------------------------------------------------------>
+### Welch t-test:
+
+On data averaged by Mouse.
+Data is assumed heteroscedastic in relation to `Condition`.
+
+```{r}
+Calb_P12_mod_N_CC_agg <- afex::mixed(
+  N_CC ~ Condition + (0 + dCondition | ID),
+  data = Calb_P12_data_agg,
+  control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.nRE = "ignore"),
+  check_contrasts = F,
+  method = "S",
+  type = 3,
+  test_intercept = FALSE
+)
+
+parameters(Calb_P12_mod_N_CC_agg$full_model, effects = "fixed", ci_method = "satterthwaite", drop = "Intercept")
+```
+
+
+<!------------------------------------------------------------------------------>
+### GLMM:
+
+**Poisson:**
+
+```{r}
+Calb_P12_mod_N_CC_poiss <- glmmTMB::glmmTMB(
+  N_CC ~ Condition * Z + (1 | Mouse),
+  family = poisson("log"),
+  data = Calb_P12_data,
+  REML = T
+)
+
+parameters(Calb_P12_mod_N_CC_poiss)
+cat("\n")
+performance(Calb_P12_mod_N_CC_poiss)
+cat("\n")
+check_overdispersion(Calb_P12_mod_N_CC_poiss)
+```
+
+**Negative binomial:**
+
+```{r}
+Calb_P12_mod_N_CC_nb <- glmmTMB::glmmTMB(
+  N_CC ~ Condition * Z + (1 | Mouse),
+  family = nbinom2("log"),
+  data = Calb_P12_data,
+  REML = T,
+  start = list(beta = c(I(mean(Calb_P12_data$N_CC)), rep(0, 5)))
+)
+
+parameters(Calb_P12_mod_N_CC_nb)
+cat("\n")
+performance(Calb_P12_mod_N_CC_nb)
+cat("\n")
+check_overdispersion(Calb_P12_mod_N_CC_nb)
+```
+
+**Generalized poisson:**
+
+```{r}
+Calb_P12_mod_N_CC_gp <- glmmTMB::glmmTMB(
+  N_CC ~ Condition * Z + (1 | Mouse),
+  family = genpois("log"),
+  data = Calb_P12_data,
+  REML = T
+)
+
+parameters(Calb_P12_mod_N_CC_gp)
+cat("\n")
+performance(Calb_P12_mod_N_CC_gp)
+cat("\n")
+check_overdispersion(Calb_P12_mod_N_CC_gp)
+```
+
+**COM Poisson:**
+
+```{r}
+Calb_P12_mod_N_CC_cmp <- glmmTMB::glmmTMB(
+  N_CC ~ Condition * Z + (1 | Mouse),
+  family = compois("log"),
+  data = Calb_P12_data,
+  REML = T
+)
+
+parameters(Calb_P12_mod_N_CC_cmp)
+cat("\n")
+performance(Calb_P12_mod_N_CC_cmp)
+```
+
+
+<!------------------------------------------------------------------------------>
+## 3. Model Diagnostics:
+***
+
+**Model comparison:**
+
+```{r}
+performance::compare_performance(Calb_P12_mod_N_CC_nb, Calb_P12_mod_N_CC_poiss, Calb_P12_mod_N_CC_gp, Calb_P12_mod_N_CC_cmp)
+```
+
+Best model:
+
+```{r}
+Calb_P12_mod_N_CC <- Calb_P12_mod_N_CC_gp
+```
+
+
+<!------------------------------------------------------------------------------>
+### Residuals:
+
+```{r fig.width = 8}
+performance::check_model(Calb_P12_mod_N_CC, detrend = TRUE)
+
+make_acf_plot(Calb_P12_mod_N_CC)
+```
+
+
+<!------------------------------------------------------------------------------>
+### Predictions:
+
+```{r}
+nsim <- 300
+
+Calb_P12_mod_N_CC_dharma <- DHARMa::simulateResiduals(Calb_P12_mod_N_CC, plot = F, n = nsim, seed = getOption("seed"))
+Calb_P12_mod_N_CC_dharma_t <- Calb_P12_mod_N_CC_dharma$simulatedResponse |> t()
+```
+
+```{r fig.width = 10}
+ppc_plots(Calb_P12_mod_N_CC, simulations = Calb_P12_mod_N_CC_dharma_t, term = "Condition")
+ppc_plots(Calb_P12_mod_N_CC, simulations = Calb_P12_mod_N_CC_dharma_t, term = "Z")
+```
+
+```{r fig.width = 10}
+ppc_stat_plots(Calb_P12_mod_N_CC, simulations = Calb_P12_mod_N_CC_dharma_t, term = "Condition")
+ppc_stat_plots(Calb_P12_mod_N_CC, simulations = Calb_P12_mod_N_CC_dharma_t, term = "Z")
+```
+
+**Potential outliers:**
+
+```{r fig.width = 10}
+insight::get_data(Calb_P12_mod_N_CC) |> 
+  rownames_to_column("ID") |> 
+  filter(ID %in% DHARMa::outliers(Calb_P12_mod_N_CC_dharma))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 4. Effects Analysis:
+***
+
+<!------------------------------------------------------------------------------>
+### Coefficients:
+
+**All effects (Wald):**
+
+```{r}
+parameters::parameters(
+  Calb_P12_mod_N_CC, exponentiate = should_exp(Calb_P12_mod_N_CC), 
+  ci_method = "Wald", p_adjust = "none", summary = T, digits = 3
+)
+```
+
+**Main effects (Wald):**
+
+```{r}
+car::Anova(Calb_P12_mod_N_CC, type = 3)
+```
+
+**Main effects (LRT):**
+
+```{r}
+LRT(Calb_P12_mod_N_CC, pred = "Condition")
+```
+
+
+<!------------------------------------------------------------------------------>
+### Marginal Effects:
+
+**Condition:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(Calb_P12_mod_N_CC), dvs = insight::find_response(Calb_P12_mod_N_CC), between = "Condition")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(Calb_P12_mod_N_CC, specs = "Condition", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_N_CC, specs = "Condition", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_N_CC, specs = "Condition", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(Calb_P12_mod_N_CC, xaxis = "Condition") |> 
+  save_png(filename = glue("[{get_model_tag(Calb_P12_mod_N_CC)}] Boxplots - by [Condition]"), subfolder = Calb_P12_target, dpi = 600, width = 5, height = 8)
+```
+
+**Z:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(Calb_P12_mod_N_CC), dvs = insight::find_response(Calb_P12_mod_N_CC), between = "Z")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(Calb_P12_mod_N_CC, specs = "Z", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_N_CC, specs = "Z", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_N_CC, specs = "Z", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 2, fig.height = 5}
+make_signif_boxplot(Calb_P12_mod_N_CC, xaxis = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(Calb_P12_mod_N_CC)}] Boxplots - by [Z]"), subfolder = Calb_P12_target, dpi = 600, width = 4.5, height = 7)
+```
+
+**Condition:Z**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(Calb_P12_mod_N_CC), dvs = insight::find_response(Calb_P12_mod_N_CC), between = c("Condition", "Z"))
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(Calb_P12_mod_N_CC, specs = ~ Z | Condition, type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_N_CC, specs = ~ Condition | Z, type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(Calb_P12_mod_N_CC, specs = ~ Condition | Z, type = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_N_CC, specs = ~ Condition | Z, trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(Calb_P12_mod_N_CC, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+```
+
+Plots:
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot(Calb_P12_mod_N_CC, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(Calb_P12_mod_N_CC)}] Boxplots - by [Condition] within [Z]"), subfolder = Calb_P12_target, dpi = 600, width = 10, height = 8)
+```
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot_inter(Calb_P12_mod_N_CC, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(Calb_P12_mod_N_CC)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = Calb_P12_target, dpi = 600, width = 10, height = 8)
+```
+
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# III. A_ML:
+***
+
+<!------------------------------------------------------------------------------>
+## 1. Data Exploration:
+***
+
+<!------------------------------------------------------------------------------>
+### Distributions:
+
+**By Condition:**
+
+```{r}
+distribution_summary(Calb_P12_data, dvs = "A_ML", between = "Condition")
+```
+
+```{r}
+hist_plot(Calb_P12_data, var = "A_ML", facet = "Condition")
+```
+
+**By Z:**
+
+```{r}
+distribution_summary(Calb_P12_data, dvs = "A_ML", between = "Z")
+```
+
+```{r}
+hist_plot(Calb_P12_data, var = "A_ML", facet = "Z")
+```
+
+**By Condition:Z:**
+
+```{r}
+distribution_summary(Calb_P12_data, dvs = "A_ML", between = c("Condition", "Z"))
+```
+
+```{r}
+hist_plot(Calb_P12_data, var = "A_ML") + facet_grid(rows = vars(Z), cols = vars(Condition))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 2. Models:
+***
+
+<!------------------------------------------------------------------------------>
+### Welch t-test:
+
+On data averaged by Mouse.
+Data is assumed heteroscedastic in relation to `Condition`.
+
+```{r}
+Calb_P12_mod_A_ML_agg <- afex::mixed(
+  A_ML ~ Condition + (0 + dCondition | ID),
+  data = Calb_P12_data_agg,
+  control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.nRE = "ignore"),
+  check_contrasts = F,
+  method = "S",
+  type = 3,
+  test_intercept = FALSE
+)
+
+parameters(Calb_P12_mod_A_ML_agg$full_model, effects = "fixed", ci_method = "satterthwaite", drop = "Intercept")
+```
+
+
+<!------------------------------------------------------------------------------>
+### GLMM:
+
+**Gaussian:**
+
+```{r}
+Calb_P12_mod_A_ML_gauss <- glmmTMB(
+  A_ML ~ Condition * Z + (1 | Mouse),
+  family = gaussian("log"),
+  data = Calb_P12_data,
+  REML = T
+)
+
+parameters(Calb_P12_mod_A_ML_gauss)
+cat("\n")
+performance(Calb_P12_mod_A_ML_gauss)
+```
+
+**Gamma:**
+
+```{r}
+Calb_P12_mod_A_ML_gamma <- glmmTMB(
+  A_ML ~ Condition * Z + (1 | Mouse),
+  family = Gamma("log"),
+  data = Calb_P12_data,
+  REML = T
+)
+
+parameters(Calb_P12_mod_A_ML_gamma)
+cat("\n")
+performance(Calb_P12_mod_A_ML_gamma)
+```
+
+<!------------------------------------------------------------------------------>
+## 3. Model Diagnostics:
+***
+
+**Model comparison:**
+
+```{r}
+performance::compare_performance(Calb_P12_mod_A_ML_gauss, Calb_P12_mod_A_ML_gamma)
+```
+
+Best model:
+
+```{r}
+Calb_P12_mod_A_ML <- Calb_P12_mod_A_ML_gamma
+```
+
+<!------------------------------------------------------------------------------>
+### Residuals:
+
+```{r fig.width = 8}
+performance::check_model(Calb_P12_mod_A_ML, detrend = TRUE)
+
+make_acf_plot(Calb_P12_mod_A_ML)
+```
+
+
+<!------------------------------------------------------------------------------>
+### Predictions:
+
+```{r}
+nsim <- 300
+
+Calb_P12_mod_A_ML_dharma <- DHARMa::simulateResiduals(Calb_P12_mod_A_ML, plot = F, n = nsim, seed = getOption("seed"))
+Calb_P12_mod_A_ML_dharma_t <- Calb_P12_mod_A_ML_dharma$simulatedResponse |> t()
+```
+
+```{r fig.width = 10}
+ppc_plots(Calb_P12_mod_A_ML, simulations = Calb_P12_mod_A_ML_dharma_t, term = "Condition")
+ppc_plots(Calb_P12_mod_A_ML, simulations = Calb_P12_mod_A_ML_dharma_t, term = "Z")
+```
+
+```{r fig.width = 10}
+ppc_stat_plots(Calb_P12_mod_A_ML, simulations = Calb_P12_mod_A_ML_dharma_t, term = "Condition")
+ppc_stat_plots(Calb_P12_mod_A_ML, simulations = Calb_P12_mod_A_ML_dharma_t, term = "Z")
+```
+
+**Potential outliers:**
+
+```{r fig.width = 10}
+insight::get_data(Calb_P12_mod_A_ML) |> 
+  rownames_to_column("ID") |> 
+  filter(ID %in% DHARMa::outliers(Calb_P12_mod_A_ML_dharma))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 4. Effects Analysis:
+***
+
+<!------------------------------------------------------------------------------>
+### Coefficients:
+
+**All effects (Wald):**
+
+```{r}
+parameters::parameters(
+  Calb_P12_mod_A_ML, exponentiate = should_exp(Calb_P12_mod_A_ML), 
+  ci_method = "Wald", p_adjust = "none", summary = T, digits = 3
+)
+```
+
+**Main effects (Wald):**
+
+```{r}
+car::Anova(Calb_P12_mod_A_ML, type = 3)
+```
+
+**Main effects (LRT):**
+
+```{r}
+LRT(Calb_P12_mod_A_ML, pred = "Condition")
+```
+
+
+<!------------------------------------------------------------------------------>
+### Marginal Effects:
+
+**Condition:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(Calb_P12_mod_A_ML), dvs = insight::find_response(Calb_P12_mod_A_ML), between = "Condition")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(Calb_P12_mod_A_ML, specs = "Condition", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_A_ML, specs = "Condition", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_A_ML, specs = "Condition", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(Calb_P12_mod_A_ML, xaxis = "Condition") |> 
+  save_png(filename = glue("[{get_model_tag(Calb_P12_mod_A_ML)}] Boxplots - by [Condition]"), subfolder = Calb_P12_target, dpi = 600, width = 5, height = 8)
+```
+
+**Z:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(Calb_P12_mod_A_ML), dvs = insight::find_response(Calb_P12_mod_A_ML), between = "Z")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(Calb_P12_mod_A_ML, specs = "Z", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_A_ML, specs = "Z", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_A_ML, specs = "Z", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 2, fig.height = 5}
+make_signif_boxplot(Calb_P12_mod_A_ML, xaxis = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(Calb_P12_mod_A_ML)}] Boxplots - by [Z]"), subfolder = Calb_P12_target, dpi = 600, width = 4.5, height = 7)
+```
+
+**Condition:Z**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(Calb_P12_mod_A_ML), dvs = insight::find_response(Calb_P12_mod_A_ML), between = c("Condition", "Z"))
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(Calb_P12_mod_A_ML, specs = ~ Z | Condition, type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_A_ML, specs = ~ Condition | Z, type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(Calb_P12_mod_A_ML, specs = ~ Condition | Z, type = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_A_ML, specs = ~ Condition | Z, trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(Calb_P12_mod_A_ML, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+```
+
+Plots:
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot(Calb_P12_mod_A_ML, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(Calb_P12_mod_A_ML)}] Boxplots - by [Condition] within [Z]"), subfolder = Calb_P12_target, dpi = 600, width = 10, height = 8)
+```
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot_inter(Calb_P12_mod_A_ML, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(Calb_P12_mod_A_ML)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = Calb_P12_target, dpi = 600, width = 10, height = 8)
+```
+
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# IV. A_PC_per_cell:
+***
+
+<!------------------------------------------------------------------------------>
+## 1. Data Exploration:
+***
+
+<!------------------------------------------------------------------------------>
+### Distributions:
+
+**By Condition:**
+
+```{r}
+distribution_summary(Calb_P12_data, dvs = "A_PC_per_cell", between = "Condition")
+```
+
+```{r}
+hist_plot(Calb_P12_data, var = "A_PC_per_cell", facet = "Condition")
+```
+
+**By Z:**
+
+```{r}
+distribution_summary(Calb_P12_data, dvs = "A_PC_per_cell", between = "Z")
+```
+
+```{r}
+hist_plot(Calb_P12_data, var = "A_PC_per_cell", facet = "Z")
+```
+
+**By Condition:Z:**
+
+```{r}
+distribution_summary(Calb_P12_data, dvs = "A_PC_per_cell", between = c("Condition", "Z"))
+```
+
+```{r}
+hist_plot(Calb_P12_data, var = "A_PC_per_cell") + facet_grid(rows = vars(Z), cols = vars(Condition))
+```
+
+
+<!------------------------------------------------------------------------------>
+### Relationships:
+
+```{r}
+ggplot(Calb_P12_data, aes(x = A_ML, y = A_PC_per_cell, color = Condition, shape = Mouse)) + geom_point() + geom_smooth(method = "lm", se = F)
+```
+
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+## 2. Models:
+***
+
+<!------------------------------------------------------------------------------>
+### Welch t-test:
+
+On data averaged by Mouse.
+Data is assumed heteroscedastic in relation to `Condition`.
+
+```{r}
+Calb_P12_mod_A_PC_agg <- afex::mixed(
+  A_PC_per_cell ~ Condition + (0 + dCondition | ID),
+  data = Calb_P12_data_agg,
+  control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.nRE = "ignore"),
+  check_contrasts = F,
+  method = "S",
+  type = 3,
+  test_intercept = FALSE
+)
+
+parameters(Calb_P12_mod_A_PC_agg$full_model, effects = "fixed", ci_method = "satterthwaite", drop = "Intercept")
+```
+
+
+<!------------------------------------------------------------------------------>
+### GLMM:
+
+**Gaussian:**
+
+```{r}
+Calb_P12_mod_A_PC_gauss <- glmmTMB(
+  A_PC_per_cell ~ Condition * Z + (1 | Mouse),
+  family = gaussian("log"),
+  data = Calb_P12_data,
+  REML = T
+)
+
+parameters(Calb_P12_mod_A_PC_gauss)
+cat("\n")
+performance(Calb_P12_mod_A_PC_gauss)
+```
+
+**Gamma:**
+
+```{r}
+Calb_P12_mod_A_PC_gamma <- glmmTMB(
+  A_PC_per_cell ~ Condition * Z + (1 | Mouse),
+  family = Gamma("log"),
+  data = Calb_P12_data,
+  REML = T
+)
+
+parameters(Calb_P12_mod_A_PC_gamma)
+cat("\n")
+performance(Calb_P12_mod_A_PC_gamma)
+```
+
+**Gamma + offset for A_ML:**
+
+```{r}
+Calb_P12_mod_A_PC_gamma_off <- glmmTMB(
+  A_PC_per_cell ~ Condition * Z + offset(log(A_ML)) + (1 | Mouse),
+  family = Gamma("log"),
+  data = Calb_P12_data,
+  REML = T
+)
+
+parameters(Calb_P12_mod_A_PC_gamma_off)
+cat("\n")
+performance(Calb_P12_mod_A_PC_gamma_off)
+```
+
+<!------------------------------------------------------------------------------>
+## 3. Model Diagnostics:
+***
+
+**Model comparison:**
+
+```{r}
+performance::compare_performance(Calb_P12_mod_A_PC_gauss, Calb_P12_mod_A_PC_gamma)
+```
+
+Best model:
+
+```{r}
+Calb_P12_mod_A_PC <- Calb_P12_mod_A_PC_gamma
+```
+
+
+<!------------------------------------------------------------------------------>
+### Residuals:
+
+```{r fig.width = 8}
+performance::check_model(Calb_P12_mod_A_PC, detrend = TRUE)
+
+make_acf_plot(Calb_P12_mod_A_PC)
+```
+
+
+<!------------------------------------------------------------------------------>
+### Predictions:
+
+```{r}
+nsim <- 300
+
+Calb_P12_mod_A_PC_dharma <- DHARMa::simulateResiduals(Calb_P12_mod_A_PC, plot = F, n = nsim, seed = getOption("seed"))
+Calb_P12_mod_A_PC_dharma_t <- Calb_P12_mod_A_PC_dharma$simulatedResponse |> t()
+```
+
+```{r fig.width = 10}
+ppc_plots(Calb_P12_mod_A_PC, simulations = Calb_P12_mod_A_PC_dharma_t, term = "Condition")
+ppc_plots(Calb_P12_mod_A_PC, simulations = Calb_P12_mod_A_PC_dharma_t, term = "Z")
+```
+
+```{r fig.width = 10}
+ppc_stat_plots(Calb_P12_mod_A_PC, simulations = Calb_P12_mod_A_PC_dharma_t, term = "Condition")
+ppc_stat_plots(Calb_P12_mod_A_PC, simulations = Calb_P12_mod_A_PC_dharma_t, term = "Z")
+```
+
+**Potential outliers:**
+
+```{r fig.width = 10}
+insight::get_data(Calb_P12_mod_A_PC) |> 
+  rownames_to_column("ID") |> 
+  filter(ID %in% DHARMa::outliers(Calb_P12_mod_A_PC_dharma))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 4. Effects Analysis:
+***
+
+<!------------------------------------------------------------------------------>
+### Coefficients:
+
+**All effects (Wald):**
+
+```{r}
+parameters::parameters(
+  Calb_P12_mod_A_PC, exponentiate = should_exp(Calb_P12_mod_A_PC), 
+  ci_method = "Wald", p_adjust = "none", summary = T, digits = 3
+)
+```
+
+**Main effects (Wald):**
+
+```{r}
+car::Anova(Calb_P12_mod_A_PC, type = 3)
+```
+
+**Main effects (LRT):**
+
+```{r}
+LRT(Calb_P12_mod_A_PC, pred = "Condition")
+```
+
+
+<!------------------------------------------------------------------------------>
+### Marginal Effects:
+
+**Condition:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(Calb_P12_mod_A_PC), dvs = insight::find_response(Calb_P12_mod_A_PC), between = "Condition")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(Calb_P12_mod_A_PC, specs = "Condition", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_A_PC, specs = "Condition", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_A_PC, specs = "Condition", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(Calb_P12_mod_A_PC, xaxis = "Condition") |> 
+  save_png(filename = glue("[{get_model_tag(Calb_P12_mod_A_PC)}] Boxplots - by [Condition]"), subfolder = Calb_P12_target, dpi = 600, width = 5, height = 8)
+```
+
+**Z:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(Calb_P12_mod_A_PC), dvs = insight::find_response(Calb_P12_mod_A_PC), between = "Z")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(Calb_P12_mod_A_PC, specs = "Z", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_A_PC, specs = "Z", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_A_PC, specs = "Z", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(Calb_P12_mod_A_PC, xaxis = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(Calb_P12_mod_A_PC)}] Boxplots - by [Z]"), subfolder = Calb_P12_target, dpi = 600, width = 4.5, height = 7)
+```
+
+**Condition:Z**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(Calb_P12_mod_A_PC), dvs = insight::find_response(Calb_P12_mod_A_PC), between = c("Condition", "Z"))
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(Calb_P12_mod_A_PC, specs = ~ Z | Condition, type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_A_PC, specs = ~ Condition | Z, type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(Calb_P12_mod_A_PC, specs = ~ Condition | Z, type = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_A_PC, specs = ~ Condition | Z, trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(Calb_P12_mod_A_PC, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+```
+
+Plots:
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot(Calb_P12_mod_A_PC, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(Calb_P12_mod_A_PC)}] Boxplots - by [Condition] within [Z]"), subfolder = Calb_P12_target, dpi = 600, width = 10, height = 8)
+```
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot_inter(Calb_P12_mod_A_PC, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(Calb_P12_mod_A_PC)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = Calb_P12_target, dpi = 600, width = 10, height = 8)
+```
+
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# V. Vol_PC_per_cell:
+***
+
+<!------------------------------------------------------------------------------>
+## 1. Data Exploration:
+***
+
+<!------------------------------------------------------------------------------>
+### Distributions:
+
+**By Condition:**
+
+```{r}
+distribution_summary(Calb_P12_data, dvs = "Vol_PC_per_cell", between = "Condition")
+```
+
+```{r}
+hist_plot(Calb_P12_data, var = "Vol_PC_per_cell", facet = "Condition")
+```
+
+**By Z:**
+
+```{r}
+distribution_summary(Calb_P12_data, dvs = "Vol_PC_per_cell", between = "Z")
+```
+
+```{r}
+hist_plot(Calb_P12_data, var = "Vol_PC_per_cell", facet = "Z")
+```
+
+**By Condition:Z:**
+
+```{r}
+distribution_summary(Calb_P12_data, dvs = "Vol_PC_per_cell", between = c("Condition", "Z"))
+```
+
+```{r}
+hist_plot(Calb_P12_data, var = "Vol_PC_per_cell") + facet_grid(rows = vars(Z), cols = vars(Condition))
+```
+
+
+<!------------------------------------------------------------------------------>
+### Relationships:
+
+```{r}
+ggplot(Calb_P12_data, aes(x = A_ML, y = Vol_PC_per_cell, color = Condition, shape = Mouse)) + geom_point() + geom_smooth(method = "lm", se = F)
+```
+
+
+<!------------------------------------------------------------------------------>
+## 2. Models:
+***
+
+<!------------------------------------------------------------------------------>
+### Welch t-test:
+
+On data averaged by Mouse.
+Data is assumed heteroscedastic in relation to `Condition`.
+
+```{r}
+Calb_P12_mod_Vol_PC_agg <- afex::mixed(
+  Vol_PC_per_cell  ~ Condition + (0 + dCondition | ID),
+  data = Calb_P12_data_agg,
+  control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.nRE = "ignore"),
+  check_contrasts = F,
+  method = "S",
+  type = 3,
+  test_intercept = FALSE
+)
+
+parameters(Calb_P12_mod_Vol_PC_agg$full_model, effects = "fixed", ci_method = "satterthwaite", drop = "Intercept")
+```
+
+
+<!------------------------------------------------------------------------------>
+### GLMM:
+
+**Gaussian:**
+
+```{r}
+Calb_P12_mod_Vol_PC_gauss <- glmmTMB(
+  Vol_PC_per_cell ~ Condition * Z + (1 | Mouse),
+  family = gaussian("log"),
+  data = Calb_P12_data,
+  REML = T
+)
+
+parameters(Calb_P12_mod_Vol_PC_gauss)
+cat("\n")
+performance(Calb_P12_mod_Vol_PC_gauss)
+```
+
+**Gamma:**
+
+```{r}
+Calb_P12_mod_Vol_PC_gamma <- glmmTMB(
+  Vol_PC_per_cell ~ Condition * Z + (1 | Mouse),
+  family = Gamma("log"),
+  data = Calb_P12_data,
+  REML = T
+)
+
+parameters(Calb_P12_mod_Vol_PC_gamma)
+cat("\n")
+performance(Calb_P12_mod_Vol_PC_gamma)
+```
+
+**Gamma + offset for A_ML:**
+
+```{r}
+Calb_P12_mod_Vol_PC_gamma_off <- glmmTMB(
+  Vol_PC_per_cell ~ Condition * Z + offset(log(A_ML)) + (1 | Mouse),
+  family = Gamma("log"),
+  data = Calb_P12_data,
+  REML = T
+)
+
+parameters(Calb_P12_mod_Vol_PC_gamma_off)
+cat("\n")
+performance(Calb_P12_mod_Vol_PC_gamma_off)
+```
+
+<!------------------------------------------------------------------------------>
+## 3. Model Diagnostics:
+***
+
+**Model comparison:**
+
+```{r}
+performance::compare_performance(Calb_P12_mod_Vol_PC_gauss, Calb_P12_mod_Vol_PC_gamma)
+```
+
+Best model:
+
+```{r}
+Calb_P12_mod_Vol_PC <- Calb_P12_mod_Vol_PC_gamma
+```
+
+
+<!------------------------------------------------------------------------------>
+### Residuals:
+
+```{r fig.width = 8}
+performance::check_model(Calb_P12_mod_Vol_PC, detrend = TRUE)
+
+make_acf_plot(Calb_P12_mod_Vol_PC)
+```
+
+
+<!------------------------------------------------------------------------------>
+### Predictions:
+
+```{r}
+nsim <- 300
+
+Calb_P12_mod_Vol_PC_dharma <- DHARMa::simulateResiduals(Calb_P12_mod_Vol_PC, plot = F, n = nsim, seed = getOption("seed"))
+Calb_P12_mod_Vol_PC_dharma_t <- Calb_P12_mod_Vol_PC_dharma$simulatedResponse |> t()
+```
+
+```{r fig.width = 10}
+ppc_plots(Calb_P12_mod_Vol_PC, simulations = Calb_P12_mod_Vol_PC_dharma_t, term = "Condition")
+ppc_plots(Calb_P12_mod_Vol_PC, simulations = Calb_P12_mod_Vol_PC_dharma_t, term = "Z")
+```
+
+```{r fig.width = 10}
+ppc_stat_plots(Calb_P12_mod_Vol_PC, simulations = Calb_P12_mod_Vol_PC_dharma_t, term = "Condition")
+ppc_stat_plots(Calb_P12_mod_Vol_PC, simulations = Calb_P12_mod_Vol_PC_dharma_t, term = "Z")
+```
+
+**Potential outliers:**
+
+```{r fig.width = 10}
+insight::get_data(Calb_P12_mod_Vol_PC) |> 
+  rownames_to_column("ID") |> 
+  filter(ID %in% DHARMa::outliers(Calb_P12_mod_Vol_PC_dharma))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 4. Effects Analysis:
+***
+
+<!------------------------------------------------------------------------------>
+### Coefficients:
+
+**All effects (Wald):**
+
+```{r}
+parameters::parameters(
+  Calb_P12_mod_Vol_PC, exponentiate = should_exp(Calb_P12_mod_Vol_PC), 
+  ci_method = "Wald", p_adjust = "none", summary = T, digits = 3
+)
+```
+
+**Main effects (Wald):**
+
+```{r}
+car::Anova(Calb_P12_mod_Vol_PC, type = 3)
+```
+
+**Main effects (LRT):**
+
+```{r}
+LRT(Calb_P12_mod_Vol_PC, pred = "Condition")
+```
+
+
+<!------------------------------------------------------------------------------>
+### Marginal Effects:
+
+**Condition:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(Calb_P12_mod_Vol_PC), dvs = insight::find_response(Calb_P12_mod_Vol_PC), between = "Condition")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(Calb_P12_mod_Vol_PC, specs = "Condition", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_Vol_PC, specs = "Condition", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_Vol_PC, specs = "Condition", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(Calb_P12_mod_Vol_PC, xaxis = "Condition") |> 
+  save_png(filename = glue("[{get_model_tag(Calb_P12_mod_Vol_PC)}] Boxplots - by [Condition]"), subfolder = Calb_P12_target, dpi = 600, width = 5, height = 8)
+```
+
+**Z:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(Calb_P12_mod_Vol_PC), dvs = insight::find_response(Calb_P12_mod_Vol_PC), between = "Z")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(Calb_P12_mod_Vol_PC, specs = "Z", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_Vol_PC, specs = "Z", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_Vol_PC, specs = "Z", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 5, fig.height = 7}
+make_signif_boxplot(Calb_P12_mod_Vol_PC, xaxis = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(Calb_P12_mod_Vol_PC)}] Boxplots - by [Z]"), subfolder = Calb_P12_target, dpi = 600, width = 4.5, height = 7)
+```
+
+**Condition:Z**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(Calb_P12_mod_Vol_PC), dvs = insight::find_response(Calb_P12_mod_Vol_PC), between = c("Condition", "Z"))
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(Calb_P12_mod_Vol_PC, specs = ~ Z | Condition, type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_Vol_PC, specs = ~ Condition | Z, type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(Calb_P12_mod_Vol_PC, specs = ~ Condition | Z, type = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(Calb_P12_mod_Vol_PC, specs = ~ Condition | Z, trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(Calb_P12_mod_Vol_PC, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+```
+
+Plots:
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot(Calb_P12_mod_Vol_PC, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(Calb_P12_mod_Vol_PC)}] Boxplots - by [Condition] within [Z]"), subfolder = Calb_P12_target, dpi = 600, width = 10, height = 8)
+```
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot_inter(Calb_P12_mod_Vol_PC, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(Calb_P12_mod_Vol_PC)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = Calb_P12_target, dpi = 600, width = 10, height = 8)
+```
+

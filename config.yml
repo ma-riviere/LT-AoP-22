@@ -1,0 +1,17 @@
+default:
+  data:
+    GluD2_path: !expr here::here("data", "GluD2.xlsx")
+    vglut_path: !expr here::here("data", "vglut.xlsx")
+    mbp_path: !expr here::here("data", "MBP.xlsx")
+    casp_P12_path: !expr here::here("data", "Casp_P12.xlsx")
+    calb_P12_path: !expr here::here("data", "Calb_P12.xlsx")
+    calb_P21_path: !expr here::here("data", "Calb_P21.xlsx")
+    brDU_path: !expr here::here("data", "BrDU.xlsx")
+    dapi_ml_ad_path: !expr here::here("data", "DAPI_ML_Adult.xlsx")
+    casp_Act_path: !expr here::here("data", "Casp3_raw_long.xlsx")
+    weight_path: !expr here::here("data", "Weight.xlsx")
+    behavior_pups_path: !expr here::here("data", "Behavior_Pups_Long.xlsx")
+    behavior_teens_path: !expr here::here("data", "Behavior_Teens_Long.xlsx")
+    behavior_adults_path: !expr here::here("data", "Behavior_Adults_Long.xlsx")
+    thickness_path: !expr here::here("data", "Thickness.xlsx")
+    ROS_path: !expr here::here("data", "ROS_Percentage.xlsx")

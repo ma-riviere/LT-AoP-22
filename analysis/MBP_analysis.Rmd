@@ -1,0 +1,660 @@
+```{r include = F, echo = F}
+source("../src/init.R", echo = F)
+```
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# I. Data:
+*** 
+
+```{r data}
+
+mbp_target <- "MBP"
+
+(mbp_data <- load_mbp(config$data$mbp_path))
+
+### Variables:
+
+mbp_responses <- c("Length_Fil", "Area_Fil", "Vol_Fil", "Angle_Fil")
+
+Length_Fil_name <- "Length of myelinated fibers *(10^(-4) μm)*"
+Area_Fil_name <- "Area of myelinated fibers *(10^(-4) μm^(2))*"
+Vol_Fil_name <- "Volume of myelinated fibers *(10^(-4) μm^(3))*"
+
+contrasts(mbp_data$Condition) <- contr.treatment
+
+### Averaged data:
+
+mbp_data_agg <- mbp_data |> 
+  group_by(Mouse, Condition) |> 
+  summarize(across(matches(mbp_responses), .fns = \(.x) mean(.x, na.rm = T))) |> 
+  ungroup() |> 
+  mutate(dCondition = as.numeric(Condition == "IH")) |> 
+  rowid_to_column("ID")
+```
+
+```{r}
+mbp_data %>% filter_all(any_vars(is.na(.)))
+```
+
+
+<!------------------------------------------------------------------------------>
+## Correlations:
+***
+
+```{r fig.width = 9}
+corr_matrix_plot(mbp_data, vars = c("Condition", mbp_responses))
+```
+
+```{r fig.width = 10}
+GGally::ggpairs(
+  mbp_data, columns = c("Condition", mbp_responses), 
+  mapping = aes(color = Condition), lower = list(continuous = "smooth")
+)
+```
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# II. Length_Fil:
+***
+
+<!------------------------------------------------------------------------------>
+## 1. Data Exploration:
+***
+
+<!------------------------------------------------------------------------------>
+### Distributions:
+
+```{r}
+distribution_summary(mbp_data, dvs = "Length_Fil", between = "Condition")
+```
+
+```{r fig.width = 6}
+hist_plot(mbp_data, var = "Length_Fil", facet = "Condition")
+```
+
+
+<!------------------------------------------------------------------------------>
+## 2. Models:
+***
+
+<!------------------------------------------------------------------------------>
+### Welch t-test:
+
+On data aggregated by Mouse.
+Data is assumed heteroscedastic in relation to `Condition`.
+
+```{r}
+mbp_mod_Length_Fil_agg <- afex::mixed(
+  Length_Fil ~ Condition + (0 + dCondition | ID),
+  data = mbp_data_agg,
+  control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.nRE = "ignore"),
+  check_contrasts = F,
+  method = "S",
+  type = 3,
+  test_intercept = FALSE
+)
+
+parameters(mbp_mod_Length_Fil_agg$full_model, effects = "fixed", ci_method = "satterthwaite", drop = "Intercept")
+```
+
+
+<!------------------------------------------------------------------------------>
+### GLMM:
+
+**Gaussian:**
+
+```{r}
+mbp_mod_Length_Fil_gauss <- glmmTMB(
+  Length_Fil ~ Condition + (1 | Mouse),
+  family = gaussian("log"),
+  data = mbp_data,
+  REML = T
+)
+
+parameters::parameters(mbp_mod_Length_Fil_gauss)
+cat("\n\n")
+performance::performance(mbp_mod_Length_Fil_gauss)
+```
+
+**Gamma:**
+
+```{r}
+mbp_mod_Length_Fil_gamma <- glmmTMB(
+  Length_Fil ~ Condition + (1 | Mouse),
+  family = Gamma("log"),
+  data = mbp_data,
+  REML = T
+)
+
+parameters::parameters(mbp_mod_Length_Fil_gamma)
+cat("\n\n")
+performance::performance(mbp_mod_Length_Fil_gamma)
+```
+
+
+<!------------------------------------------------------------------------------>
+## 3. Model Diagnostics:
+***
+
+**Model comparison:**
+
+```{r}
+performance::compare_performance(mbp_mod_Length_Fil_gauss, mbp_mod_Length_Fil_gamma)
+```
+
+Best model:
+
+```{r}
+mbp_mod_Length_Fil <- mbp_mod_Length_Fil_gamma
+```
+
+
+<!------------------------------------------------------------------------------>
+### Residuals:
+
+```{r fig.width = 8}
+make_acf_plot(mbp_mod_Length_Fil)
+
+performance::check_model(mbp_mod_Length_Fil, detrend = TRUE)
+```
+
+
+<!------------------------------------------------------------------------------>
+### Predictions:
+
+```{r}
+nsim <- 300
+
+mbp_mod_Length_Fil_dharma <- DHARMa::simulateResiduals(mbp_mod_Length_Fil, plot = F, n = nsim, seed = getOption("seed"))
+mbp_mod_Length_Fil_dharma_t <- mbp_mod_Length_Fil_dharma$simulatedResponse |> t()
+```
+
+```{r fig.width = 8}
+ppc_plots(mbp_mod_Length_Fil, mbp_mod_Length_Fil_dharma_t, term = "Condition")
+```
+
+```{r fig.width = 8}
+ppc_stat_plots(mbp_mod_Length_Fil, mbp_mod_Length_Fil_dharma_t, term = "Condition")
+```
+
+**Potential outliers:**
+
+```{r}
+insight::get_data(mbp_mod_Length_Fil) |> 
+  rownames_to_column("ID") |> 
+  filter(ID %in% DHARMa::outliers(mbp_mod_Length_Fil_dharma))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 4. Effects Analysis:
+***
+
+<!------------------------------------------------------------------------------>
+### Coefficients:
+
+**All effects (Wald):**
+
+```{r}
+parameters::model_parameters(
+  mbp_mod_Length_Fil, exponentiate = should_exp(mbp_mod_Length_Fil), 
+  ci_method = "Kenward", p_adjust = "none", summary = T, digits = 3
+)
+```
+
+**Main effects (Wald):**
+
+```{r}
+car::Anova(mbp_mod_Length_Fil, type = 3)
+```
+
+**Main effects (LRT):**
+
+```{r}
+LRT(mbp_mod_Length_Fil, pred = "Condition")
+```
+
+
+<!------------------------------------------------------------------------------>
+### Marginal Effects:
+
+**Condition:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(mbp_mod_Length_Fil), dvs = insight::find_response(mbp_mod_Length_Fil), between = "Condition")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(mbp_mod_Length_Fil, specs = "Condition", type = "response")
+```
+
+Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(mbp_mod_Length_Fil, specs = "Condition", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(mbp_mod_Length_Fil, specs = "Condition", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 2, fig.height = 3}
+make_signif_boxplot(mbp_mod_Length_Fil, xaxis = "Condition") |> 
+  save_png(filename = glue("[{get_model_tag(mbp_mod_Length_Fil)}] Boxplot - by [Condition]"), subfolder = mbp_target, dpi = 600, width = 5, height = 8)
+```
+
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+# III. Area_Fil:
+***
+
+<!------------------------------------------------------------------------------>
+## 1. Data Exploration:
+***
+
+<!------------------------------------------------------------------------------>
+### Distributions:
+
+```{r}
+distribution_summary(mbp_data, dvs = "Area_Fil", between = "Condition")
+```
+
+```{r fig.width = 6}
+hist_plot(mbp_data, var = "Area_Fil", facet = "Condition")
+```
+
+
+<!------------------------------------------------------------------------------>
+## 2. Models:
+***
+
+<!------------------------------------------------------------------------------>
+### Welch t-test:
+
+On data aggregated by Mouse.
+Data is assumed heteroscedastic in relation to `Condition`.
+
+```{r}
+mbp_mod_Area_Fil_agg <- afex::mixed(
+  Area_Fil ~ Condition + (0 + dCondition | ID),
+  data = mbp_data_agg,
+  control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.nRE = "ignore"),
+  check_contrasts = F,
+  method = "S",
+  type = 3,
+  test_intercept = FALSE
+)
+
+parameters(mbp_mod_Area_Fil_agg$full_model, effects = "fixed", ci_method = "satterthwaite", drop = "Intercept")
+```
+
+
+<!------------------------------------------------------------------------------>
+### GLMM:
+
+**Gaussian:**
+
+```{r}
+mbp_mod_Area_Fil_gauss <- glmmTMB(
+  Area_Fil ~ Condition + (1 | Mouse),
+  family = gaussian("log"),
+  data = mbp_data,
+  REML = T
+)
+
+parameters::parameters(mbp_mod_Area_Fil_gauss)
+cat("\n\n")
+performance::performance(mbp_mod_Area_Fil_gauss)
+```
+
+**Gamma:**
+
+```{r}
+mbp_mod_Area_Fil_gamma <- glmmTMB(
+  Area_Fil ~ Condition + (1 | Mouse),
+  family = Gamma("log"),
+  data = mbp_data,
+  REML = T
+)
+
+parameters::parameters(mbp_mod_Area_Fil_gamma)
+cat("\n\n")
+performance::performance(mbp_mod_Area_Fil_gamma)
+```
+
+
+<!------------------------------------------------------------------------------>
+## 3. Model Diagnostics:
+***
+
+**Model comparison:**
+
+```{r}
+performance::compare_performance(mbp_mod_Area_Fil_gauss, mbp_mod_Area_Fil_gamma)
+```
+
+Best model:
+
+```{r}
+mbp_mod_Area_Fil <- mbp_mod_Area_Fil_gamma
+```
+
+
+<!------------------------------------------------------------------------------>
+### Residuals:
+
+```{r fig.width = 10}
+make_acf_plot(mbp_mod_Area_Fil)
+
+performance::check_model(mbp_mod_Area_Fil, detrend = TRUE)
+```
+
+
+<!------------------------------------------------------------------------------>
+### Predictions:
+
+```{r}
+nsim <- 300
+
+mbp_mod_Area_Fil_dharma <- DHARMa::simulateResiduals(mbp_mod_Area_Fil, plot = F, n = nsim, seed = getOption("seed"))
+mbp_mod_Area_Fil_dharma_t <- mbp_mod_Area_Fil_dharma$simulatedResponse |> t()
+```
+
+```{r fig.width = 8}
+ppc_plots(mbp_mod_Area_Fil, mbp_mod_Area_Fil_dharma_t, term = "Condition")
+```
+
+```{r fig.width = 8}
+ppc_stat_plots(mbp_mod_Area_Fil, mbp_mod_Area_Fil_dharma_t, term = "Condition")
+```
+
+**Potential outliers:**
+
+```{r}
+insight::get_data(mbp_mod_Area_Fil) |> 
+  rownames_to_column("ID") |> 
+  filter(ID %in% DHARMa::outliers(mbp_mod_Area_Fil_dharma))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 4. Effects Analysis:
+***
+
+<!------------------------------------------------------------------------------>
+### Coefficients:
+
+**All effects (Wald):**
+
+```{r}
+parameters::model_parameters(
+  mbp_mod_Area_Fil, exponentiate = should_exp(mbp_mod_Area_Fil), 
+  ci_method = "Kenward", p_adjust = "none", summary = T, digits = 3
+)
+```
+
+**Main effects (Wald):**
+
+```{r}
+car::Anova(mbp_mod_Area_Fil, type = 3)
+```
+
+**Main effects (LRT):**
+
+```{r}
+LRT(mbp_mod_Area_Fil, pred = "Condition")
+```
+
+
+<!------------------------------------------------------------------------------>
+### Marginal Effects:
+
+**Condition:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(mbp_mod_Area_Fil), dvs = insight::find_response(mbp_mod_Area_Fil), between = "Condition")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(mbp_mod_Area_Fil, specs = "Condition", type = "response")
+```
+
+Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(mbp_mod_Length_Fil, specs = "Condition", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(mbp_mod_Length_Fil, specs = "Condition", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 2, fig.height = 3}
+make_signif_boxplot(mbp_mod_Area_Fil, xaxis = "Condition") |> 
+  save_png(filename = glue("[{get_model_tag(mbp_mod_Area_Fil)}] Boxplot - by [Condition]"), subfolder = mbp_target, dpi = 600, width = 5, height = 8)
+```
+
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+# IV. Vol_Fil:
+***
+
+<!------------------------------------------------------------------------------>
+## 1. Data Exploration:
+***
+
+<!------------------------------------------------------------------------------>
+### Distributions:
+
+```{r}
+distribution_summary(mbp_data, dvs = "Vol_Fil", between = "Condition")
+```
+
+```{r fig.width = 6}
+hist_plot(mbp_data, var = "Vol_Fil", facet = "Condition")
+```
+
+
+<!------------------------------------------------------------------------------>
+## 2. Models:
+***
+
+<!------------------------------------------------------------------------------>
+### a. Welch t-test:
+
+On data aggregated by Mouse.
+Data is assumed heteroscedastic in relation to `Condition`.
+
+```{r}
+mbp_mod_Vol_Fil_agg <- afex::mixed(
+  Vol_Fil ~ Condition + (0 + dCondition | ID),
+  data = mbp_data_agg,
+  control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.nRE = "ignore"),
+  check_contrasts = F,
+  method = "S",
+  type = 3,
+  test_intercept = FALSE
+)
+
+parameters(mbp_mod_Vol_Fil_agg$full_model, effects = "fixed", ci_method = "satterthwaite", drop = "Intercept")
+```
+
+
+<!------------------------------------------------------------------------------>
+### b. GLMM:
+
+**Gaussian:**
+
+```{r}
+mbp_mod_Vol_Fil_gauss <- glmmTMB(
+  Vol_Fil ~ Condition + (1 | Mouse),
+  family = gaussian("log"),
+  data = mbp_data,
+  REML = T
+)
+
+parameters::parameters(mbp_mod_Vol_Fil_gauss)
+cat("\n\n")
+performance::performance(mbp_mod_Vol_Fil_gauss)
+```
+
+**Gamma:**
+
+```{r}
+mbp_mod_Vol_Fil_gamma <- glmmTMB(
+  Vol_Fil ~ Condition + (1 | Mouse),
+  family = Gamma("log"),
+  data = mbp_data,
+  REML = T
+)
+
+parameters::parameters(mbp_mod_Vol_Fil_gamma)
+cat("\n\n")
+performance::performance(mbp_mod_Vol_Fil_gamma)
+```
+
+
+<!------------------------------------------------------------------------------>
+## 3. Model Diagnostics:
+***
+
+**Model comparison:**
+
+```{r}
+performance::compare_performance(mbp_mod_Vol_Fil_gauss, mbp_mod_Vol_Fil_gamma)
+```
+
+Best model:
+
+```{r}
+mbp_mod_Vol_Fil <- mbp_mod_Vol_Fil_gamma
+```
+
+
+<!------------------------------------------------------------------------------>
+### Residuals:
+
+```{r fig.width = 8}
+make_acf_plot(mbp_mod_Vol_Fil)
+
+performance::check_model(mbp_mod_Vol_Fil, detrend = TRUE)
+```
+
+
+<!------------------------------------------------------------------------------>
+### Predictions:
+
+```{r}
+nsim <- 300
+
+mbp_mod_Vol_Fil_dharma <- DHARMa::simulateResiduals(mbp_mod_Vol_Fil, plot = F, n = nsim, seed = getOption("seed"))
+mbp_mod_Vol_Fil_dharma_t <- mbp_mod_Vol_Fil_dharma$simulatedResponse |> t()
+```
+
+```{r fig.width = 8}
+ppc_plots(mbp_mod_Vol_Fil, mbp_mod_Vol_Fil_dharma_t, term = "Condition")
+```
+
+```{r fig.width = 8}
+ppc_stat_plots(mbp_mod_Vol_Fil, mbp_mod_Vol_Fil_dharma_t, term = "Condition")
+```
+
+**Potential outliers:**
+
+```{r}
+insight::get_data(mbp_mod_Vol_Fil) |> 
+  rownames_to_column("ID") |> 
+  filter(ID %in% DHARMa::outliers(mbp_mod_Vol_Fil_dharma))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 4. Effects Analysis:
+***
+
+<!------------------------------------------------------------------------------>
+### Coefficients:
+
+**All effects (Wald):**
+
+```{r}
+parameters::model_parameters(
+  mbp_mod_Vol_Fil, exponentiate = should_exp(mbp_mod_Vol_Fil), 
+  ci_method = "Kenward", p_adjust = "none", summary = T, digits = 3
+)
+```
+
+**Main effects (Wald):**
+
+```{r}
+car::Anova(mbp_mod_Vol_Fil, type = 3)
+```
+
+**Main effects (LRT):**
+
+```{r}
+LRT(mbp_mod_Vol_Fil, pred = "Condition")
+```
+
+
+<!------------------------------------------------------------------------------>
+### Marginal Effects:
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(mbp_mod_Vol_Fil), dvs = insight::find_response(mbp_mod_Vol_Fil), between = "Condition")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(mbp_mod_Vol_Fil, specs = "Condition", type = "response")
+```
+
+Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(mbp_mod_Vol_Fil, specs = "Condition", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(mbp_mod_Vol_Fil, specs = "Condition", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 2, fig.height = 3}
+make_signif_boxplot(mbp_mod_Vol_Fil, xaxis = "Condition") |> 
+  save_png(filename = glue("[{get_model_tag(mbp_mod_Vol_Fil)}] Boxplot - by [Condition]"), subfolder = mbp_target, dpi = 600, width = 5, height = 8)
+```
+

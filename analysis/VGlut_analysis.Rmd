@@ -1,0 +1,2273 @@
+```{r include = F, echo = F}
+source("../src/init.R", echo = F)
+```
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# I. Data:
+***
+
+```{r data}
+
+vglut_target <- "VGlut"
+
+# --------------------------------
+
+(vglut_data <- load_vglut(config$data$vglut_path) |> filter(Experiment == "A"))
+
+### Variables:
+
+vglut_responses <- c("A_CL_VGLUT_DD", "A_VGLUT_CF", "A_VGLUT_MF", "N_CC", "A_DD", "A_DD_per_cell", "Vol_DD", "Vol_DD_per_cell","A_ML", "Vol_ML", "Thick_ML")
+vglut_predictors <- c("Condition", "Z", "Mouse")
+
+A_VGLUT_MF_name <- "Vglut2-labelled Mossy fiber area  \n in the IGL *(10^-4 μm^(2))*"
+A_VGLUT_CF_name  <- "Vglut2-labelled Climbing fiber area  \n in the ML *(10^-4 μm^(2))*"
+N_CC_name <- "Number of Purkinje cell bodies  \n *(per 413x10^3 μm^(3))*"
+A_DD_per_cell_name  <- "Purkinje dendrite area per Purkinje cell body  \n*(10^-4 μm^(2))*"
+Vol_DD_per_cell_name <- "Purkinje dendrite volume per Purkinje cell body  \n *(10^-4 μm^(3))*"
+A_ML_name <- "Molecular layer area *(10^-4 μm^(2))*"
+Vol_ML_name <- "Molecular layer volume *(10^-4 μm^(3))*"
+Thick_ML_name <- "Molecular layer thickness *(μm)*"
+
+contrasts(vglut_data$Condition) <- contr.treatment
+
+### Averaged data:
+
+vglut_data_agg <- vglut_data |> 
+  group_by(Mouse, Condition) |> 
+  summarize(across(matches(vglut_responses), .fns = \(.x) mean(.x, na.rm = T))) |> 
+  ungroup() |> 
+  mutate(dCondition = as.numeric(Condition == "IH")) |> 
+  rowid_to_column("ID")
+```
+
+```{r}
+vglut_data %>% filter_all(any_vars(is.na(.)))
+```
+
+<!------------------------------------------------------------------------------>
+## Correlations:
+***
+
+```{r fig.width = 8}
+corr_matrix_plot(vglut_data, vars = c(vglut_responses, vglut_predictors))
+```
+
+```{r fig.width = 10}
+GGally::ggpairs(
+  vglut_data, columns = c("Condition", vglut_responses), 
+  mapping = aes(color = Condition), lower = list(continuous = "smooth")
+)
+```
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# II. A_VGLUT_MF:
+***
+
+<!------------------------------------------------------------------------------>
+## 1. Data Exploration:
+***
+
+<!------------------------------------------------------------------------------>
+### Distributions:
+
+**By Condition:**
+
+```{r}
+distribution_summary(vglut_data, dvs = "A_VGLUT_MF", between = "Condition")
+```
+
+```{r}
+hist_plot(vglut_data, var = "A_VGLUT_MF", facet = "Condition")
+```
+
+**By Z:**
+
+```{r}
+distribution_summary(vglut_data, dvs = "A_VGLUT_MF", between = "Z")
+```
+
+```{r}
+hist_plot(vglut_data, var = "A_VGLUT_MF", facet = "Z")
+```
+
+**By Condition:Z:**
+
+```{r}
+distribution_summary(vglut_data, dvs = "A_VGLUT_MF", between = c("Condition", "Z"))
+```
+
+```{r}
+hist_plot(vglut_data, var = "A_VGLUT_MF") + facet_grid(rows = vars(Z), cols = vars(Condition))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 2. Models:
+***
+
+<!------------------------------------------------------------------------------>
+### Welch t-test:
+
+On data aggregated by Mouse.
+Data is assumed heteroscedastic in relation to `Condition`.
+
+```{r}
+vglut_mod_A_VGLUT_MF_agg <- afex::mixed(
+  A_VGLUT_MF ~ Condition + (0 + dCondition | ID),
+  data = vglut_data_agg,
+  control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.nRE = "ignore"),
+  check_contrasts = F,
+  method = "S",
+  type = 3,
+  test_intercept = FALSE
+)
+
+parameters(vglut_mod_A_VGLUT_MF_agg$full_model, effects = "fixed", ci_method = "wald", drop = "Intercept")
+```
+
+
+<!------------------------------------------------------------------------------>
+### GLMM:
+
+**Gaussian:**
+
+```{r}
+vglut_mod_A_VGLUT_MF_gauss <- glmmTMB::glmmTMB(
+  A_VGLUT_MF ~ Condition * Z + (1 | Mouse),
+  family = gaussian("log"),
+  data = vglut_data,
+  REML = T
+)
+
+parameters::parameters(vglut_mod_A_VGLUT_MF_gauss)
+cat("\n\n")
+performance::performance(vglut_mod_A_VGLUT_MF_gauss)
+```
+
+**Gamma:**
+
+```{r}
+vglut_mod_A_VGLUT_MF_gamma <- glmmTMB::glmmTMB(
+  A_VGLUT_MF ~ Condition * Z + (1 | Mouse),
+  family = Gamma("log"),
+  data = vglut_data,
+  REML = T
+)
+
+parameters::parameters(vglut_mod_A_VGLUT_MF_gamma)
+cat("\n\n")
+performance::performance(vglut_mod_A_VGLUT_MF_gamma)
+```
+
+
+<!------------------------------------------------------------------------------>
+## 3. Model Diagnostics:
+***
+
+**Model comparison:**
+
+```{r}
+performance::compare_performance(vglut_mod_A_VGLUT_MF_gauss, vglut_mod_A_VGLUT_MF_gamma)
+```
+
+Best model:
+
+```{r}
+vglut_mod_A_VGLUT_MF <- vglut_mod_A_VGLUT_MF_gamma
+```
+
+
+<!------------------------------------------------------------------------------>
+### Residuals:
+
+```{r fig.width = 8}
+performance::check_model(vglut_mod_A_VGLUT_MF, detrend = TRUE)
+
+make_acf_plot(vglut_mod_A_VGLUT_MF)
+```
+
+
+<!------------------------------------------------------------------------------>
+### Predictions:
+
+```{r}
+nsim <- 300
+
+vglut_mod_A_VGLUT_MF_dharma <- DHARMa::simulateResiduals(vglut_mod_A_VGLUT_MF, plot = F, n = nsim, seed = getOption("seed"))
+vglut_mod_A_VGLUT_MF_dharma_t <- vglut_mod_A_VGLUT_MF_dharma$simulatedResponse |> t()
+```
+
+```{r fig.width = 10}
+ppc_plots(vglut_mod_A_VGLUT_MF, simulations = vglut_mod_A_VGLUT_MF_dharma_t, term = "Condition")
+ppc_plots(vglut_mod_A_VGLUT_MF, simulations = vglut_mod_A_VGLUT_MF_dharma_t, term = "Z")
+```
+
+```{r fig.width = 10}
+ppc_stat_plots(vglut_mod_A_VGLUT_MF, simulations = vglut_mod_A_VGLUT_MF_dharma_t, term = "Condition")
+ppc_stat_plots(vglut_mod_A_VGLUT_MF, simulations = vglut_mod_A_VGLUT_MF_dharma_t, term = "Z")
+```
+
+**Potential outliers:**
+
+```{r fig.width = 10}
+insight::get_data(vglut_mod_A_VGLUT_MF) |> 
+  rownames_to_column("ID") |> 
+  filter(ID %in% DHARMa::outliers(vglut_mod_A_VGLUT_MF_dharma))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 4. Effects Analysis:
+***
+
+<!------------------------------------------------------------------------------>
+### Coefficients:
+
+**All effects (Wald):**
+
+```{r}
+parameters::parameters(
+  vglut_mod_A_VGLUT_MF, exponentiate = should_exp(vglut_mod_A_VGLUT_MF), 
+  ci_method = "Wald", p_adjust = "none", summary = T, digits = 3
+)
+```
+
+**Main effects (Wald):**
+
+```{r}
+car::Anova(vglut_mod_A_VGLUT_MF, type = 3)
+```
+
+**Main effects (LRT):**
+
+```{r}
+LRT(vglut_mod_A_VGLUT_MF, pred = "Condition")
+```
+
+
+<!------------------------------------------------------------------------------>
+### Marginal Effects:
+
+**Condition:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(vglut_mod_A_VGLUT_MF), dvs = insight::find_response(vglut_mod_A_VGLUT_MF), between = "Condition")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(vglut_mod_A_VGLUT_MF, specs = "Condition", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_VGLUT_MF, specs = "Condition", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_VGLUT_MF, specs = "Condition", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(vglut_mod_A_VGLUT_MF, xaxis = "Condition") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_MF)}] Boxplots - by [Condition]"), subfolder = vglut_target, dpi = 600, width = 5, height = 8)
+```
+
+**Z:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(vglut_mod_A_VGLUT_MF), dvs = insight::find_response(vglut_mod_A_VGLUT_MF), between = "Z")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(vglut_mod_A_VGLUT_MF, specs = "Z", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_VGLUT_MF, specs = "Z", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_VGLUT_MF, specs = "Z", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(vglut_mod_A_VGLUT_MF, xaxis = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_MF)}] Boxplots - by [Z]"), subfolder = vglut_target, dpi = 600, width = 4.5, height = 7)
+```
+
+**Condition:Z**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(vglut_mod_A_VGLUT_MF), dvs = insight::find_response(vglut_mod_A_VGLUT_MF), between = c("Condition", "Z"))
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(vglut_mod_A_VGLUT_MF, specs = ~ Condition | Z, type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_VGLUT_MF, specs = ~ Condition | Z, type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(vglut_mod_A_VGLUT_MF, specs = ~ Condition | Z, type = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_VGLUT_MF, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(vglut_mod_A_VGLUT_MF, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+```
+
+Plots:
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot(vglut_mod_A_VGLUT_MF, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_MF)}] Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+```
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot_inter(vglut_mod_A_VGLUT_MF, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_MF)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+```
+
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# III. A_VGLUT_CF:
+***
+
+<!------------------------------------------------------------------------------>
+## 1. Data Exploration:
+***
+
+<!------------------------------------------------------------------------------>
+### Distributions:
+
+**By Condition:**
+
+```{r}
+distribution_summary(vglut_data, dvs = "A_VGLUT_CF", between = "Condition")
+```
+
+```{r}
+hist_plot(vglut_data, var = "A_VGLUT_CF", facet = "Condition")
+```
+
+**By Z:**
+
+```{r}
+distribution_summary(vglut_data, dvs = "A_VGLUT_CF", between = "Z")
+```
+
+```{r}
+hist_plot(vglut_data, var = "A_VGLUT_CF", facet = "Z")
+```
+
+**By Condition:Z:**
+
+```{r}
+distribution_summary(vglut_data, dvs = "A_VGLUT_CF", between = c("Condition", "Z"))
+```
+
+```{r}
+hist_plot(vglut_data, var = "A_VGLUT_CF") + facet_grid(rows = vars(Z), cols = vars(Condition))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 2. Models:
+***
+
+<!------------------------------------------------------------------------------>
+### Welch t-test:
+
+On data aggregated by Mouse.
+Data is assumed heteroscedastic in relation to `Condition`.
+
+```{r}
+vglut_mod_A_VGLUT_CF_agg <- afex::mixed(
+  A_VGLUT_CF ~ Condition + (0 + dCondition | ID),
+  data = vglut_data_agg,
+  control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.nRE = "ignore"),
+  check_contrasts = F,
+  method = "S",
+  type = 3,
+  test_intercept = FALSE
+)
+
+parameters(vglut_mod_A_VGLUT_CF_agg$full_model, effects = "fixed", ci_method = "wald", drop = "Intercept")
+```
+
+
+<!------------------------------------------------------------------------------>
+### GLMM:
+
+**Gaussian:**
+
+```{r}
+vglut_mod_A_VGLUT_CF_gauss <- glmmTMB::glmmTMB(
+  A_VGLUT_CF ~ Condition * Z + (1 | Mouse),
+  family = gaussian("log"),
+  data = vglut_data,
+  REML = T
+)
+
+parameters::parameters(vglut_mod_A_VGLUT_CF_gauss)
+cat("\n\n")
+performance::performance(vglut_mod_A_VGLUT_CF_gauss)
+```
+
+**Gamma:**
+
+```{r}
+vglut_mod_A_VGLUT_CF_gamma <- glmmTMB::glmmTMB(
+  A_VGLUT_CF ~ Condition * Z + (1 | Mouse),
+  family = Gamma("log"),
+  data = vglut_data,
+  REML = T
+)
+
+parameters::parameters(vglut_mod_A_VGLUT_CF_gamma)
+cat("\n\n")
+performance::performance(vglut_mod_A_VGLUT_CF_gamma)
+```
+
+
+<!------------------------------------------------------------------------------>
+## 3. Model Diagnostics:
+***
+
+**Model comparison:**
+
+```{r}
+performance::compare_performance(vglut_mod_A_VGLUT_CF_gauss, vglut_mod_A_VGLUT_CF_gamma)
+```
+
+Best model:
+
+```{r}
+vglut_mod_A_VGLUT_CF <- vglut_mod_A_VGLUT_CF_gamma
+```
+
+
+<!------------------------------------------------------------------------------>
+### Residuals:
+
+```{r fig.width = 8}
+performance::check_model(vglut_mod_A_VGLUT_CF, detrend = TRUE)
+
+make_acf_plot(vglut_mod_A_VGLUT_CF)
+```
+
+
+<!------------------------------------------------------------------------------>
+### Predictions:
+
+```{r}
+nsim <- 300
+
+vglut_mod_A_VGLUT_CF_dharma <- DHARMa::simulateResiduals(vglut_mod_A_VGLUT_CF, plot = F, n = nsim, seed = getOption("seed"))
+vglut_mod_A_VGLUT_CF_dharma_t <- vglut_mod_A_VGLUT_CF_dharma$simulatedResponse |> t()
+```
+
+```{r fig.width = 10}
+ppc_plots(vglut_mod_A_VGLUT_CF, simulations = vglut_mod_A_VGLUT_CF_dharma_t, term = "Condition")
+ppc_plots(vglut_mod_A_VGLUT_CF, simulations = vglut_mod_A_VGLUT_CF_dharma_t, term = "Z")
+```
+
+```{r fig.width = 10}
+ppc_stat_plots(vglut_mod_A_VGLUT_CF, simulations = vglut_mod_A_VGLUT_CF_dharma_t, term = "Condition")
+ppc_stat_plots(vglut_mod_A_VGLUT_CF, simulations = vglut_mod_A_VGLUT_CF_dharma_t, term = "Z")
+```
+
+**Potential outliers:**
+
+```{r fig.width = 10}
+insight::get_data(vglut_mod_A_VGLUT_CF) |> 
+  rownames_to_column("ID") |> 
+  filter(ID %in% DHARMa::outliers(vglut_mod_A_VGLUT_CF_dharma))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 4. Effects Analysis:
+***
+
+<!------------------------------------------------------------------------------>
+### Coefficients:
+
+**All effects (Wald):**
+
+```{r}
+parameters::parameters(
+  vglut_mod_A_VGLUT_CF, exponentiate = should_exp(vglut_mod_A_VGLUT_CF), 
+  ci_method = "Wald", p_adjust = "none", summary = T, digits = 3
+)
+```
+
+**Main effects (Wald):**
+
+```{r}
+car::Anova(vglut_mod_A_VGLUT_CF, type = 3)
+```
+
+**Main effects (LRT):**
+
+```{r}
+LRT(vglut_mod_A_VGLUT_CF, pred = "Condition")
+```
+
+<!------------------------------------------------------------------------------>
+### Marginal Effects:
+
+**Condition:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(vglut_mod_A_VGLUT_CF), dvs = insight::find_response(vglut_mod_A_VGLUT_CF), between = "Condition")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(vglut_mod_A_VGLUT_CF, specs = "Condition", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_VGLUT_CF, specs = "Condition", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_VGLUT_CF, specs = "Condition", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(vglut_mod_A_VGLUT_CF, xaxis = "Condition") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_CF)}] Boxplots - by [Condition]"), subfolder = vglut_target, dpi = 600, width = 5, height = 8)
+```
+
+**Z:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(vglut_mod_A_VGLUT_CF), dvs = insight::find_response(vglut_mod_A_VGLUT_CF), between = "Z")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(vglut_mod_A_VGLUT_CF, specs = "Z", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_VGLUT_CF, specs = "Z", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_VGLUT_CF, specs = "Z", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(vglut_mod_A_VGLUT_CF, xaxis = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_CF)}] Boxplots - by [Z]"), subfolder = vglut_target, dpi = 600, width = 4.5, height = 7)
+```
+
+**Condition:Z**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(vglut_mod_A_VGLUT_CF), dvs = insight::find_response(vglut_mod_A_VGLUT_CF), between = c("Condition", "Z"))
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(vglut_mod_A_VGLUT_CF, specs = ~ Condition | Z, type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_VGLUT_CF, specs = ~ Condition | Z, type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(vglut_mod_A_VGLUT_CF, specs = ~ Condition | Z, type = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_VGLUT_CF, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(vglut_mod_A_VGLUT_CF, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+```
+
+Plots:
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot(vglut_mod_A_VGLUT_CF, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_CF)}] Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+```
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot_inter(vglut_mod_A_VGLUT_CF, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_CF)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+```
+
+
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# IV. A_DD_per_cell:
+***
+
+<!------------------------------------------------------------------------------>
+## 1. Data Exploration:
+***
+
+<!------------------------------------------------------------------------------>
+### Distributions:
+
+**By Condition:**
+
+```{r}
+distribution_summary(vglut_data, dvs = "A_DD_per_cell", between = "Condition")
+```
+
+```{r}
+hist_plot(vglut_data, var = "A_DD_per_cell", facet = "Condition")
+```
+
+**By Z:**
+
+```{r}
+distribution_summary(vglut_data, dvs = "A_DD_per_cell", between = "Z")
+```
+
+```{r}
+hist_plot(vglut_data, var = "A_DD_per_cell", facet = "Z")
+```
+
+**By Condition:Z:**
+
+```{r}
+distribution_summary(vglut_data, dvs = "A_DD_per_cell", between = c("Condition", "Z"))
+```
+
+```{r}
+hist_plot(vglut_data, var = "A_DD_per_cell") + facet_grid(rows = vars(Z), cols = vars(Condition))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 2. Models:
+***
+
+<!------------------------------------------------------------------------------>
+### Welch t-test:
+
+On data aggregated by Mouse.
+Data is assumed heteroscedastic in relation to `Condition`.
+
+```{r}
+vglut_mod_A_DD_per_cell_agg <- afex::mixed(
+  A_DD_per_cell ~ Condition + (0 + dCondition | ID),
+  data = vglut_data_agg,
+  control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.nRE = "ignore"),
+  check_contrasts = F,
+  method = "S",
+  type = 3,
+  test_intercept = FALSE
+)
+
+parameters(vglut_mod_A_DD_per_cell_agg$full_model, effects = "fixed", ci_method = "wald", drop = "Intercept")
+```
+
+
+<!------------------------------------------------------------------------------>
+### GLMM:
+
+**Gaussian:**
+
+```{r}
+vglut_mod_A_DD_per_cell_gauss <- glmmTMB::glmmTMB(
+  A_DD_per_cell ~ Condition * Z + (1 | Mouse),
+  family = gaussian("log"),
+  data = vglut_data,
+  REML = T
+)
+
+parameters::parameters(vglut_mod_A_DD_per_cell_gauss)
+cat("\n\n")
+performance::performance(vglut_mod_A_DD_per_cell_gauss)
+```
+
+**Gamma:**
+
+```{r}
+vglut_mod_A_DD_per_cell_gamma <- glmmTMB::glmmTMB(
+  A_DD_per_cell ~ Condition * Z + (1 | Mouse),
+  family = Gamma("log"),
+  data = vglut_data,
+  REML = T
+)
+
+parameters::parameters(vglut_mod_A_DD_per_cell_gamma)
+cat("\n\n")
+performance::performance(vglut_mod_A_DD_per_cell_gamma)
+```
+
+
+<!------------------------------------------------------------------------------>
+## 3. Model Diagnostics:
+***
+
+**Model comparison:**
+
+```{r}
+performance::compare_performance(vglut_mod_A_DD_per_cell_gauss, vglut_mod_A_DD_per_cell_gamma)
+```
+
+Best model:
+
+```{r}
+vglut_mod_A_DD_per_cell <- vglut_mod_A_DD_per_cell_gamma
+```
+
+
+<!------------------------------------------------------------------------------>
+### Residuals:
+
+```{r fig.width = 8}
+performance::check_model(vglut_mod_A_DD_per_cell, detrend = TRUE)
+
+make_acf_plot(vglut_mod_A_DD_per_cell)
+```
+
+
+<!------------------------------------------------------------------------------>
+### Predictions:
+
+```{r}
+nsim <- 300
+
+vglut_mod_A_DD_per_cell_dharma <- DHARMa::simulateResiduals(vglut_mod_A_DD_per_cell, plot = F, n = nsim, seed = getOption("seed"))
+vglut_mod_A_DD_per_cell_dharma_t <- vglut_mod_A_DD_per_cell_dharma$simulatedResponse |> t()
+
+plot(vglut_mod_A_DD_per_cell_dharma, quantreg = TRUE)
+```
+
+```{r fig.width = 10}
+ppc_plots(vglut_mod_A_DD_per_cell, simulations = vglut_mod_A_DD_per_cell_dharma_t, term = "Condition")
+ppc_plots(vglut_mod_A_DD_per_cell, simulations = vglut_mod_A_DD_per_cell_dharma_t, term = "Z")
+```
+
+```{r fig.width = 10}
+ppc_stat_plots(vglut_mod_A_DD_per_cell, simulations = vglut_mod_A_DD_per_cell_dharma_t, term = "Condition")
+ppc_stat_plots(vglut_mod_A_DD_per_cell, simulations = vglut_mod_A_DD_per_cell_dharma_t, term = "Z")
+```
+
+**Potential outliers:**
+
+```{r fig.width = 10}
+insight::get_data(vglut_mod_A_DD_per_cell) |> 
+  rownames_to_column("ID") |> 
+  filter(ID %in% DHARMa::outliers(vglut_mod_A_DD_per_cell_dharma))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 4. Effects Analysis:
+***
+
+<!------------------------------------------------------------------------------>
+### Coefficients:
+
+**All effects (Wald):**
+
+```{r}
+parameters::parameters(
+  vglut_mod_A_DD_per_cell, exponentiate = should_exp(vglut_mod_A_DD_per_cell), 
+  ci_method = "Wald", p_adjust = "none", summary = T, digits = 3
+)
+```
+
+**Main effects (Wald):**
+
+```{r}
+car::Anova(vglut_mod_A_DD_per_cell, type = 3)
+```
+
+**Main effects (LRT):**
+
+```{r}
+LRT(vglut_mod_A_DD_per_cell, pred = "Condition")
+```
+
+<!------------------------------------------------------------------------------>
+### Marginal Effects:
+
+**Condition:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(vglut_mod_A_DD_per_cell), dvs = insight::find_response(vglut_mod_A_DD_per_cell), between = "Condition")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(vglut_mod_A_DD_per_cell, specs = "Condition", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_DD_per_cell, specs = "Condition", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_DD_per_cell, specs = "Condition", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(vglut_mod_A_DD_per_cell, xaxis = "Condition") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_DD_per_cell)}] Boxplots - by [Condition]"), subfolder = vglut_target, dpi = 600, width = 5, height = 8)
+```
+
+**Z:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(vglut_mod_A_DD_per_cell), dvs = insight::find_response(vglut_mod_A_DD_per_cell), between = "Z")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(vglut_mod_A_DD_per_cell, specs = "Z", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_DD_per_cell, specs = "Z", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_DD_per_cell, specs = "Z", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(vglut_mod_A_DD_per_cell, xaxis = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_DD_per_cell)}] Boxplots - by [Z]"), subfolder = vglut_target, dpi = 600, width = 4.5, height = 7)
+```
+
+**Condition:Z**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(vglut_mod_A_DD_per_cell), dvs = insight::find_response(vglut_mod_A_DD_per_cell), between = c("Condition", "Z"))
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(vglut_mod_A_DD_per_cell, specs = ~ Condition | Z, type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_DD_per_cell, specs = ~ Condition | Z, type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(vglut_mod_A_DD_per_cell, specs = ~ Condition | Z, type = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_DD_per_cell, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(vglut_mod_A_DD_per_cell, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+```
+
+Plots:
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot(vglut_mod_A_DD_per_cell, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_DD_per_cell)}] Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+```
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot_inter(vglut_mod_A_DD_per_cell, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_DD_per_cell)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+```
+
+
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# V. Vol_DD_per_cell:
+***
+
+
+<!------------------------------------------------------------------------------>
+## 1. Data Exploration:
+***
+
+<!------------------------------------------------------------------------------>
+### Distributions:
+
+**By Condition:**
+
+```{r}
+distribution_summary(vglut_data, dvs = "Vol_DD_per_cell", between = "Condition")
+```
+
+```{r}
+hist_plot(vglut_data, var = "Vol_DD_per_cell", facet = "Condition")
+```
+
+**By Z:**
+
+```{r}
+distribution_summary(vglut_data, dvs = "Vol_DD_per_cell", between = "Z")
+```
+
+```{r}
+hist_plot(vglut_data, var = "Vol_DD_per_cell", facet = "Z")
+```
+
+**By Condition:Z:**
+
+```{r}
+distribution_summary(vglut_data, dvs = "Vol_DD_per_cell", between = c("Condition", "Z"))
+```
+
+```{r}
+hist_plot(vglut_data, var = "Vol_DD_per_cell") + facet_grid(rows = vars(Z), cols = vars(Condition))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 2. Models:
+***
+
+<!------------------------------------------------------------------------------>
+### Welch t-test:
+
+On data aggregated by Mouse.
+Data is assumed heteroscedastic in relation to `Condition`.
+
+```{r}
+vglut_mod_Vol_DD_per_cell_agg <- afex::mixed(
+  Vol_DD_per_cell ~ Condition + (0 + dCondition | ID),
+  data = vglut_data_agg,
+  control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.nRE = "ignore"),
+  check_contrasts = F,
+  method = "S",
+  type = 3,
+  test_intercept = FALSE
+)
+
+parameters(vglut_mod_Vol_DD_per_cell_agg$full_model, effects = "fixed", ci_method = "wald", drop = "Intercept")
+```
+
+
+<!------------------------------------------------------------------------------>
+### GLMM:
+
+**Gaussian:**
+
+```{r}
+vglut_mod_Vol_DD_per_cell_gauss <- glmmTMB::glmmTMB(
+  Vol_DD_per_cell ~ Condition * Z + (1 | Mouse),
+  family = gaussian("log"),
+  data = vglut_data,
+  REML = T,
+  control = glmmTMBControl(optimizer = optim, optArgs = list(method = "BFGS"))
+)
+
+parameters::parameters(vglut_mod_Vol_DD_per_cell_gauss)
+cat("\n\n")
+performance::performance(vglut_mod_Vol_DD_per_cell_gauss)
+```
+
+**Gamma:**
+
+```{r}
+vglut_mod_Vol_DD_per_cell_gamma <- glmmTMB::glmmTMB(
+  Vol_DD_per_cell ~ Condition * Z + (1 | Mouse),
+  family = Gamma("log"),
+  data = vglut_data,
+  REML = T,
+  control = glmmTMBControl(optimizer = optim, optArgs = list(method = "BFGS"))
+)
+
+parameters::parameters(vglut_mod_Vol_DD_per_cell_gamma)
+cat("\n\n")
+performance::performance(vglut_mod_Vol_DD_per_cell_gamma)
+```
+
+
+<!------------------------------------------------------------------------------>
+## 3. Model Diagnostics:
+***
+
+**Model comparison:**
+
+```{r}
+performance::compare_performance(vglut_mod_Vol_DD_per_cell_gauss, vglut_mod_Vol_DD_per_cell_gamma)
+```
+
+Best model:
+
+```{r}
+vglut_mod_Vol_DD_per_cell <- vglut_mod_Vol_DD_per_cell_gamma
+```
+
+
+<!------------------------------------------------------------------------------>
+### Residuals:
+
+```{r fig.width = 8}
+performance::check_model(vglut_mod_Vol_DD_per_cell, detrend = TRUE)
+
+make_acf_plot(vglut_mod_Vol_DD_per_cell)
+```
+
+
+<!------------------------------------------------------------------------------>
+### Predictions:
+
+```{r}
+nsim <- 300
+
+vglut_mod_Vol_DD_per_cell_dharma <- DHARMa::simulateResiduals(vglut_mod_Vol_DD_per_cell, plot = F, n = nsim, seed = getOption("seed"))
+vglut_mod_Vol_DD_per_cell_dharma_t <- vglut_mod_Vol_DD_per_cell_dharma$simulatedResponse |> t()
+```
+
+```{r fig.width = 10}
+ppc_plots(vglut_mod_Vol_DD_per_cell, simulations = vglut_mod_Vol_DD_per_cell_dharma_t, term = "Condition")
+ppc_plots(vglut_mod_Vol_DD_per_cell, simulations = vglut_mod_Vol_DD_per_cell_dharma_t, term = "Z")
+```
+
+```{r fig.width = 10}
+ppc_stat_plots(vglut_mod_Vol_DD_per_cell, simulations = vglut_mod_Vol_DD_per_cell_dharma_t, term = "Condition")
+ppc_stat_plots(vglut_mod_Vol_DD_per_cell, simulations = vglut_mod_Vol_DD_per_cell_dharma_t, term = "Z")
+```
+
+**Potential outliers:**
+
+```{r fig.width = 10}
+insight::get_data(vglut_mod_Vol_DD_per_cell) |> 
+  rownames_to_column("ID") |> 
+  filter(ID %in% DHARMa::outliers(vglut_mod_Vol_DD_per_cell_dharma))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 4. Effects Analysis:
+***
+
+<!------------------------------------------------------------------------------>
+### Coefficients:
+
+**All effects (Wald):**
+
+```{r}
+parameters::parameters(
+  vglut_mod_Vol_DD_per_cell, exponentiate = should_exp(vglut_mod_Vol_DD_per_cell), 
+  ci_method = "Wald", p_adjust = "none", summary = T, digits = 3
+)
+```
+
+**Main effects (Wald):**
+
+```{r}
+car::Anova(vglut_mod_Vol_DD_per_cell, type = 3)
+```
+
+**Main effects (LRT):**
+
+```{r}
+LRT(vglut_mod_Vol_DD_per_cell, pred = "Condition")
+```
+
+<!------------------------------------------------------------------------------>
+### Marginal Effects:
+
+**Condition:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(vglut_mod_Vol_DD_per_cell), dvs = insight::find_response(vglut_mod_Vol_DD_per_cell), between = "Condition")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(vglut_mod_Vol_DD_per_cell, specs = "Condition", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(vglut_mod_Vol_DD_per_cell, specs = "Condition", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(vglut_mod_Vol_DD_per_cell, specs = "Condition", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(vglut_mod_Vol_DD_per_cell, xaxis = "Condition") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_Vol_DD_per_cell)}] Boxplots - by [Condition]"), subfolder = vglut_target, dpi = 600, width = 5, height = 8)
+```
+
+**Z:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(vglut_mod_Vol_DD_per_cell), dvs = insight::find_response(vglut_mod_Vol_DD_per_cell), between = "Z")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(vglut_mod_Vol_DD_per_cell, specs = "Z", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(vglut_mod_Vol_DD_per_cell, specs = "Z", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(vglut_mod_Vol_DD_per_cell, specs = "Z", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(vglut_mod_Vol_DD_per_cell, xaxis = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_Vol_DD_per_cell)}] Boxplots - by [Z]"), subfolder = vglut_target, dpi = 600, width = 4.5, height = 7)
+```
+
+**Condition:Z**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(vglut_mod_Vol_DD_per_cell), dvs = insight::find_response(vglut_mod_Vol_DD_per_cell), between = c("Condition", "Z"))
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(vglut_mod_Vol_DD_per_cell, specs = ~ Condition | Z, type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(vglut_mod_Vol_DD_per_cell, specs = ~ Condition | Z, type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(vglut_mod_Vol_DD_per_cell, specs = ~ Condition | Z, type = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(vglut_mod_Vol_DD_per_cell, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(vglut_mod_Vol_DD_per_cell, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+```
+
+Plots:
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot(vglut_mod_Vol_DD_per_cell, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_Vol_DD_per_cell)}] Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 8)
+```
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot_inter(vglut_mod_Vol_DD_per_cell, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_Vol_DD_per_cell)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+```
+
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# VI. A_ML:
+***
+
+
+<!------------------------------------------------------------------------------>
+## 1. Data Exploration:
+***
+
+<!------------------------------------------------------------------------------>
+### Distributions:
+
+**By Condition:**
+
+```{r}
+distribution_summary(vglut_data, dvs = "A_ML", between = "Condition")
+```
+
+```{r}
+hist_plot(vglut_data, var = "A_ML", facet = "Condition")
+```
+
+**By Z:**
+
+```{r}
+distribution_summary(vglut_data, dvs = "A_ML", between = "Z")
+```
+
+```{r}
+hist_plot(vglut_data, var = "A_ML", facet = "Z")
+```
+
+**By Condition:Z:**
+
+```{r}
+distribution_summary(vglut_data, dvs = "A_ML", between = c("Condition", "Z"))
+```
+
+```{r}
+hist_plot(vglut_data, var = "A_ML") + facet_grid(rows = vars(Z), cols = vars(Condition))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 2. Models:
+***
+
+<!------------------------------------------------------------------------------>
+### Welch t-test:
+
+On data aggregated by Mouse.
+Data is assumed heteroscedastic in relation to `Condition`.
+
+```{r}
+vglut_mod_A_ML_agg <- afex::mixed(
+  A_ML ~ Condition + (0 + dCondition | ID),
+  data = vglut_data_agg,
+  control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.nRE = "ignore"),
+  check_contrasts = F,
+  method = "S",
+  type = 3,
+  test_intercept = FALSE
+)
+
+parameters(vglut_mod_A_ML_agg$full_model, effects = "fixed", ci_method = "wald", drop = "Intercept")
+```
+
+
+<!------------------------------------------------------------------------------>
+### GLMM:
+
+**Gaussian:**
+
+```{r}
+vglut_mod_A_ML_gauss <- glmmTMB::glmmTMB(
+  A_ML ~ Condition * Z + (1 | Mouse),
+  family = gaussian("log"),
+  data = vglut_data,
+  REML = T
+)
+
+parameters::parameters(vglut_mod_A_ML_gauss)
+cat("\n\n")
+performance::performance(vglut_mod_A_ML_gauss)
+```
+
+**Gamma:**
+
+```{r}
+vglut_mod_A_ML_gamma <- glmmTMB::glmmTMB(
+  A_ML ~ Condition * Z + (1 | Mouse),
+  family = Gamma("log"),
+  data = vglut_data,
+  REML = T
+)
+
+parameters::parameters(vglut_mod_A_ML_gamma)
+cat("\n\n")
+performance::performance(vglut_mod_A_ML_gamma)
+```
+
+
+<!------------------------------------------------------------------------------>
+## 3. Model Diagnostics:
+***
+
+**Model comparison:**
+
+```{r}
+performance::compare_performance(vglut_mod_A_ML_gauss, vglut_mod_A_ML_gamma)
+```
+
+Best model:
+
+```{r}
+vglut_mod_A_ML <- vglut_mod_A_ML_gamma
+```
+
+
+<!------------------------------------------------------------------------------>
+### Residuals:
+
+```{r fig.width = 8}
+performance::check_model(vglut_mod_A_ML, detrend = TRUE)
+
+make_acf_plot(vglut_mod_A_ML)
+```
+
+
+<!------------------------------------------------------------------------------>
+### Predictions:
+
+```{r}
+nsim <- 300
+
+vglut_mod_A_ML_dharma <- DHARMa::simulateResiduals(vglut_mod_A_ML, plot = F, n = nsim, seed = getOption("seed"))
+vglut_mod_A_ML_dharma_t <- vglut_mod_A_ML_dharma$simulatedResponse |> t()
+```
+
+```{r fig.width = 10}
+ppc_plots(vglut_mod_A_ML, simulations = vglut_mod_A_ML_dharma_t, term = "Condition")
+ppc_plots(vglut_mod_A_ML, simulations = vglut_mod_A_ML_dharma_t, term = "Z")
+```
+
+```{r fig.width = 10}
+ppc_stat_plots(vglut_mod_A_ML, simulations = vglut_mod_A_ML_dharma_t, term = "Condition")
+ppc_stat_plots(vglut_mod_A_ML, simulations = vglut_mod_A_ML_dharma_t, term = "Z")
+```
+
+**Potential outliers:**
+
+```{r fig.width = 10}
+insight::get_data(vglut_mod_A_ML) |> 
+  rownames_to_column("ID") |> 
+  filter(ID %in% DHARMa::outliers(vglut_mod_A_ML_dharma))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 4. Effects Analysis:
+***
+
+<!------------------------------------------------------------------------------>
+### Coefficients:
+
+**All effects (Wald):**
+
+```{r}
+parameters::parameters(
+  vglut_mod_A_ML, exponentiate = should_exp(vglut_mod_A_ML), 
+  ci_method = "Wald", p_adjust = "none", summary = T, digits = 3
+)
+```
+
+**Main effects (Wald):**
+
+```{r}
+car::Anova(vglut_mod_A_ML, type = 3)
+```
+
+**Main effects (LRT):**
+
+```{r}
+LRT(vglut_mod_A_ML, pred = "Condition")
+```
+
+
+<!------------------------------------------------------------------------------>
+### Marginal Effects:
+
+**Condition:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(vglut_mod_A_ML), dvs = insight::find_response(vglut_mod_A_ML), between = "Condition")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(vglut_mod_A_ML, specs = "Condition", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_ML, specs = "Condition", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_ML, specs = "Condition", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(vglut_mod_A_ML, xaxis = "Condition") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_ML)}] Boxplots - by [Condition]"), subfolder = vglut_target, dpi = 600, width = 5, height = 8)
+```
+
+**Z:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(vglut_mod_A_ML), dvs = insight::find_response(vglut_mod_A_ML), between = "Z")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(vglut_mod_A_ML, specs = "Z", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_ML, specs = "Z", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_ML, specs = "Z", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(vglut_mod_A_ML, xaxis = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_ML)}] Boxplots - by [Z]"), subfolder = vglut_target, dpi = 600, width = 4.5, height = 7)
+```
+
+**Condition:Z**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(vglut_mod_A_ML), dvs = insight::find_response(vglut_mod_A_ML), between = c("Condition", "Z"))
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(vglut_mod_A_ML, specs = ~ Condition | Z, type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_ML, specs = ~ Condition | Z, type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(vglut_mod_A_ML, specs = ~ Condition | Z, type = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(vglut_mod_A_ML, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(vglut_mod_A_ML, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+```
+
+Plots:
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot(vglut_mod_A_ML, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_ML)}] Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+```
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot_inter(vglut_mod_A_ML, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_ML)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+```
+
+
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# VII. Thick_ML:
+***
+
+<!------------------------------------------------------------------------------>
+## 1. Data Exploration:
+***
+
+<!------------------------------------------------------------------------------>
+### Distributions:
+
+**By Condition:**
+
+```{r}
+distribution_summary(vglut_data, dvs = "Thick_ML", between = "Condition")
+```
+
+```{r}
+hist_plot(vglut_data, var = "Thick_ML", facet = "Condition")
+```
+
+**By Z:**
+
+```{r}
+distribution_summary(vglut_data, dvs = "Thick_ML", between = "Z")
+```
+
+```{r}
+hist_plot(vglut_data, var = "Thick_ML", facet = "Z")
+```
+
+**By Condition:Z:**
+
+```{r}
+distribution_summary(vglut_data, dvs = "Thick_ML", between = c("Condition", "Z"))
+```
+
+```{r}
+hist_plot(vglut_data, var = "Thick_ML") + facet_grid(rows = vars(Z), cols = vars(Condition))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 2. Models:
+***
+
+<!------------------------------------------------------------------------------>
+### Welch t-test:
+
+On data aggregated by Mouse.
+Data is assumed heteroscedastic in relation to `Condition`.
+
+```{r}
+vglut_mod_Thick_ML_agg <- afex::mixed(
+  Thick_ML ~ Condition + (0 + dCondition | ID),
+  data = vglut_data_agg,
+  control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.nRE = "ignore"),
+  check_contrasts = F,
+  method = "S",
+  type = 3,
+  test_intercept = FALSE
+)
+
+parameters(vglut_mod_Thick_ML_agg$full_model, effects = "fixed", ci_method = "wald", drop = "Intercept")
+```
+
+
+<!------------------------------------------------------------------------------>
+### GLMM:
+
+**Gaussian:**
+
+```{r cache = T}
+vglut_mod_Thick_ML_gauss <- glmmTMB::glmmTMB(
+  Thick_ML ~ Condition * Z + (1 | Mouse),
+  family = gaussian("log"),
+  data = vglut_data,
+  REML = T
+)
+
+parameters::parameters(vglut_mod_Thick_ML_gauss)
+cat("\n\n")
+performance::performance(vglut_mod_Thick_ML_gauss)
+```
+
+**Gamma:**
+
+```{r cache = T}
+vglut_mod_Thick_ML_gamma <- glmmTMB::glmmTMB(
+  Thick_ML ~ Condition * Z + (1 | Mouse),
+  family = Gamma("log"),
+  data = vglut_data,
+  REML = T
+)
+
+parameters::parameters(vglut_mod_Thick_ML_gamma)
+cat("\n\n")
+performance::performance(vglut_mod_Thick_ML_gamma)
+```
+
+
+<!------------------------------------------------------------------------------>
+## 3. Model Diagnostics:
+***
+
+**Model comparison:**
+
+```{r}
+performance::compare_performance(vglut_mod_Thick_ML_gauss, vglut_mod_Thick_ML_gamma)
+```
+
+Best model:
+
+```{r}
+vglut_mod_Thick_ML <- vglut_mod_Thick_ML_gamma
+```
+
+
+<!------------------------------------------------------------------------------>
+### Residuals:
+
+```{r fig.width = 8}
+performance::check_model(vglut_mod_Thick_ML, detrend = TRUE)
+
+make_acf_plot(vglut_mod_Thick_ML)
+```
+
+
+<!------------------------------------------------------------------------------>
+### Predictions:
+
+```{r}
+nsim <- 300
+
+vglut_mod_Thick_ML_dharma <- DHARMa::simulateResiduals(vglut_mod_Thick_ML, plot = F, n = nsim, seed = getOption("seed"))
+vglut_mod_Thick_ML_dharma_t <- vglut_mod_Thick_ML_dharma$simulatedResponse |> t()
+```
+
+```{r fig.width = 10}
+ppc_plots(vglut_mod_Thick_ML, simulations = vglut_mod_Thick_ML_dharma_t, term = "Condition")
+ppc_plots(vglut_mod_Thick_ML, simulations = vglut_mod_Thick_ML_dharma_t, term = "Z")
+```
+
+```{r fig.width = 10}
+ppc_stat_plots(vglut_mod_Thick_ML, simulations = vglut_mod_Thick_ML_dharma_t, term = "Condition")
+ppc_stat_plots(vglut_mod_Thick_ML, simulations = vglut_mod_Thick_ML_dharma_t, term = "Z")
+```
+
+**Potential outliers:**
+
+```{r fig.width = 10}
+insight::get_data(vglut_mod_Thick_ML) |> 
+  rownames_to_column("ID") |> 
+  filter(ID %in% DHARMa::outliers(vglut_mod_Thick_ML_dharma))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 4. Effects Analysis:
+***
+
+<!------------------------------------------------------------------------------>
+### Coefficients:
+
+**All effects (Wald):**
+
+```{r}
+parameters::parameters(
+  vglut_mod_Thick_ML, exponentiate = should_exp(vglut_mod_Thick_ML), 
+  ci_method = "Wald", p_adjust = "none", summary = T, digits = 3
+)
+```
+
+**Main effects (Wald):**
+
+```{r}
+car::Anova(vglut_mod_Thick_ML, type = 3)
+```
+
+**Main effects (LRT):**
+
+```{r}
+LRT(vglut_mod_Thick_ML, pred = "Condition")
+```
+
+
+<!------------------------------------------------------------------------------>
+### Marginal Effects:
+
+**Condition:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(vglut_mod_Thick_ML), dvs = insight::find_response(vglut_mod_Thick_ML), between = "Condition")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(vglut_mod_Thick_ML, specs = "Condition", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(vglut_mod_Thick_ML, specs = "Condition", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(vglut_mod_Thick_ML, specs = "Condition", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(vglut_mod_Thick_ML, xaxis = "Condition") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_Thick_ML)}] Boxplots - by [Condition]"), subfolder = vglut_target, dpi = 600, width = 5, height = 8)
+```
+
+**Z:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(vglut_mod_Thick_ML), dvs = insight::find_response(vglut_mod_Thick_ML), between = "Z")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(vglut_mod_Thick_ML, specs = "Z", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(vglut_mod_Thick_ML, specs = "Z", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(vglut_mod_Thick_ML, specs = "Z", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(vglut_mod_Thick_ML, xaxis = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_Thick_ML)}] Boxplots - by [Z]"), subfolder = vglut_target, dpi = 600, width = 4.5, height = 7)
+```
+
+**Condition:Z**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(vglut_mod_Thick_ML), dvs = insight::find_response(vglut_mod_Thick_ML), between = c("Condition", "Z"))
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(vglut_mod_Thick_ML, specs = ~ Condition | Z, type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(vglut_mod_Thick_ML, specs = ~ Condition | Z, type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(vglut_mod_Thick_ML, specs = ~ Condition | Z, type = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(vglut_mod_Thick_ML, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(vglut_mod_Thick_ML, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+```
+
+Plots:
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot(vglut_mod_Thick_ML, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_Thick_ML)}] Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+```
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot_inter(vglut_mod_Thick_ML, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_Thick_ML)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+```
+
+
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# VIII. N_CC:
+***
+
+<!------------------------------------------------------------------------------>
+## 1. Data Exploration:
+***
+
+<!------------------------------------------------------------------------------>
+### Distributions:
+
+**By Condition:**
+
+```{r}
+distribution_summary(vglut_data, dvs = "N_CC", between = "Condition")
+```
+
+```{r}
+hist_plot(vglut_data, var = "N_CC", facet = "Condition")
+```
+
+**By Z:**
+
+```{r}
+distribution_summary(vglut_data, dvs = "N_CC", between = "Z")
+```
+
+```{r}
+hist_plot(vglut_data, var = "N_CC", facet = "Z")
+```
+
+**By Condition:Z:**
+
+```{r}
+distribution_summary(vglut_data, dvs = "N_CC", between = c("Condition", "Z"))
+```
+
+```{r}
+hist_plot(vglut_data, var = "N_CC") + facet_grid(rows = vars(Z), cols = vars(Condition))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 2. Models:
+***
+
+<!------------------------------------------------------------------------------>
+### Welch t-test:
+
+On data aggregated by Mouse.
+Data is assumed heteroscedastic in relation to `Condition`.
+
+```{r}
+vglut_mod_N_CC_agg <- afex::mixed(
+  N_CC ~ Condition + (0 + dCondition | ID),
+  data = vglut_data_agg,
+  control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.nRE = "ignore"),
+  check_contrasts = F,
+  method = "S",
+  type = 3,
+  test_intercept = FALSE
+)
+
+parameters(vglut_mod_N_CC_agg$full_model, effects = "fixed", ci_method = "wald", drop = "Intercept")
+```
+
+
+<!------------------------------------------------------------------------------>
+### GLMM:
+
+
+**Negative Binomial:**
+
+```{r}
+vglut_mod_N_CC_nb1 <- glmmTMB::glmmTMB(
+  N_CC ~ Condition * Z + (1 | Mouse),
+  family = nbinom1("log"),
+  data = vglut_data,
+  REML = T,
+  control = glmmTMBControl(optimizer = optim, optArgs = list(method = "BFGS"))
+)
+
+parameters::parameters(vglut_mod_N_CC_nb1)
+cat("\n")
+performance::performance(vglut_mod_N_CC_nb1)
+cat("\n")
+performance::check_overdispersion(vglut_mod_N_CC_nb1)
+```
+
+**Generalized poisson:**
+
+```{r}
+vglut_mod_N_CC_gp <- glmmTMB::glmmTMB(
+  N_CC ~ Condition * Z + (1 | Mouse),
+  family = genpois("log"),
+  data = vglut_data,
+  REML = T,
+  control = glmmTMBControl(optimizer = optim, optArgs = list(method = "BFGS"))
+)
+
+performance::performance(vglut_mod_N_CC_gp)
+cat("\n")
+parameters::parameters(vglut_mod_N_CC_gp)
+cat("\n")
+performance::check_overdispersion(vglut_mod_N_CC_gp)
+```
+
+**COM Poisson:**
+
+```{r}
+vglut_mod_N_CC_cmp <- glmmTMB::glmmTMB(
+  N_CC ~ Condition * Z + (1 | Mouse),
+  family = compois("log"),
+  data = vglut_data,
+  REML = T
+)
+
+performance::performance(vglut_mod_N_CC_cmp)
+cat("\n")
+parameters::parameters(vglut_mod_N_CC_cmp)
+```
+
+
+<!------------------------------------------------------------------------------>
+## 3. Model Diagnostics:
+***
+
+**Model comparison:**
+
+```{r}
+performance::compare_performance(vglut_mod_N_CC_nb1, vglut_mod_N_CC_gp, vglut_mod_N_CC_cmp)
+```
+
+Best model:
+
+```{r}
+vglut_mod_N_CC <- vglut_mod_N_CC_gp
+```
+
+
+<!------------------------------------------------------------------------------>
+### Residuals:
+
+```{r fig.width = 8}
+performance::check_model(vglut_mod_N_CC, detrend = TRUE)
+
+make_acf_plot(vglut_mod_N_CC)
+```
+
+<!------------------------------------------------------------------------------>
+### Predictions:
+
+```{r}
+nsim <- 300
+
+vglut_mod_N_CC_dharma <- DHARMa::simulateResiduals(vglut_mod_N_CC, plot = F, n = nsim, seed = getOption("seed"))
+vglut_mod_N_CC_dharma_t <- vglut_mod_N_CC_dharma$simulatedResponse |> t()
+```
+
+```{r fig.width = 10}
+ppc_plots(vglut_mod_N_CC, simulations = vglut_mod_N_CC_dharma_t, term = "Condition")
+ppc_plots(vglut_mod_N_CC, simulations = vglut_mod_N_CC_dharma_t, term = "Z")
+```
+
+```{r fig.width = 10}
+ppc_stat_plots(vglut_mod_N_CC, simulations = vglut_mod_N_CC_dharma_t, term = "Condition")
+ppc_stat_plots(vglut_mod_N_CC, simulations = vglut_mod_N_CC_dharma_t, term = "Z")
+```
+
+**Potential outliers:**
+
+```{r fig.width = 10}
+insight::get_data(vglut_mod_N_CC) |> 
+  rownames_to_column("ID") |> 
+  filter(ID %in% DHARMa::outliers(vglut_mod_N_CC_dharma))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 4. Effects Analysis:
+***
+
+<!------------------------------------------------------------------------------>
+### Coefficients:
+
+**All effects (Wald):**
+
+```{r}
+parameters::parameters(
+  vglut_mod_N_CC, exponentiate = should_exp(vglut_mod_N_CC), 
+  ci_method = "Wald", p_adjust = "none", summary = T, digits = 3
+)
+```
+
+**Main effects (Wald):**
+
+```{r}
+car::Anova(vglut_mod_N_CC, type = 3)
+```
+
+**Main effects (LRT):**
+
+```{r}
+LRT(vglut_mod_N_CC, pred = "Condition")
+```
+
+<!------------------------------------------------------------------------------>
+### Marginal Effects:
+
+**Condition:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(vglut_mod_N_CC), dvs = insight::find_response(vglut_mod_N_CC), between = "Condition")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(vglut_mod_N_CC, specs = "Condition", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(vglut_mod_N_CC, specs = "Condition", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(vglut_mod_N_CC, specs = "Condition", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(vglut_mod_N_CC, xaxis = "Condition") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_N_CC)}] Boxplots - by [Condition]"), subfolder = vglut_target, dpi = 600, width = 5, height = 8)
+```
+
+**Z:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(vglut_mod_N_CC), dvs = insight::find_response(vglut_mod_N_CC), between = "Z")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(vglut_mod_N_CC, specs = "Z", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(vglut_mod_N_CC, specs = "Z", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(vglut_mod_N_CC, specs = "Z", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(vglut_mod_N_CC, xaxis = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_N_CC)}] Boxplots - by [Z]"), subfolder = vglut_target, dpi = 600, width = 4.5, height = 7)
+```
+
+**Condition:Z**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(vglut_mod_N_CC), dvs = insight::find_response(vglut_mod_N_CC), between = c("Condition", "Z"))
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(vglut_mod_N_CC, specs = ~ Condition | Z, type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(vglut_mod_N_CC, specs = ~ Condition | Z, type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(vglut_mod_N_CC, specs = ~ Condition | Z, type = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(vglut_mod_N_CC, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(vglut_mod_N_CC, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+```
+
+Plots:
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot(vglut_mod_N_CC, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_N_CC)}] Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+```
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot_inter(vglut_mod_N_CC, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(vglut_mod_N_CC)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+```
+

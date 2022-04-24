@@ -1,0 +1,996 @@
+```{r include = F, echo = F}
+source("../src/init.R", echo = F)
+```
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# I. Data:
+***
+
+```{r data}
+
+GluD2_target <- "GluD2"
+
+(GluD2_data <- load_GluD2(config$data$GluD2_path) |> select(-N_CC))
+
+### Variables:
+
+GluD2_responses <- c("A_CL_GLUD2_DD_per_cell", "A_DD", "A_DD_per_cell", "A_GLUD2", "Vol_GLUD2")
+GluD2_predictors <- c("Condition", "Z")
+
+A_GLUD2_name <- "Gluð2-labelled Parallel fiber area  \n in the ML *(10^(-5) μm^(2))*"
+Vol_GLUD2_name  <- "Gluð2-labelled Parallel fiber volume  \n in the ML *(10^(-5) μm^(3))*"
+
+A_DD_name  <- "Purkinje dendrite area *(10^(-4) μm^(2))*"
+A_DD_per_cell_name  <- "Purkinje dendrite area *(10^(-4) μm^(2))*  \n per Purkinje cell"
+
+
+contrasts(GluD2_data$Condition) <- contr.sum
+contrasts(GluD2_data$Z) <- contr.sum
+
+### Averaged data:
+
+GluD2_data_agg <- GluD2_data |> 
+  group_by(Mouse, Condition) |> 
+  summarize(across(matches(GluD2_responses), .fns = \(.x) mean(.x, na.rm = T))) |> 
+  ungroup() |> 
+  mutate(dCondition = as.numeric(Condition == "IH")) |> 
+  rowid_to_column("ID")
+```
+
+```{r}
+GluD2_data %>% filter_all(any_vars(is.na(.)))
+```
+
+<!------------------------------------------------------------------------------>
+## Correlations:
+***
+
+```{r fig.width = 8}
+corr_matrix_plot(GluD2_data, vars = c(GluD2_responses, GluD2_predictors))
+```
+
+```{r fig.width = 10}
+GGally::ggpairs(
+  GluD2_data, columns = c(GluD2_predictors, GluD2_responses), 
+  mapping = aes(color = Condition), lower = list(continuous = "smooth")
+)
+```
+
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# II. A_DD_per_cell:
+***
+
+<!------------------------------------------------------------------------------>
+## 1. Data Exploration:
+***
+
+<!------------------------------------------------------------------------------>
+### Distributions:
+
+**By Condition:**
+
+```{r}
+distribution_summary(GluD2_data, dvs = "A_DD_per_cell", between = "Condition")
+```
+
+```{r}
+hist_plot(GluD2_data, var = "A_DD_per_cell", facet = "Condition")
+```
+
+**By Z:**
+
+```{r}
+distribution_summary(GluD2_data, dvs = "A_DD_per_cell", between = "Z")
+```
+
+```{r}
+hist_plot(GluD2_data, var = "A_DD_per_cell", facet = "Z")
+```
+
+**By Condition:Z:**
+
+```{r}
+distribution_summary(GluD2_data, dvs = "A_DD_per_cell", between = c("Condition", "Z"))
+```
+
+```{r}
+hist_plot(GluD2_data, var = "A_DD_per_cell") + facet_grid(rows = vars(Z), cols = vars(Condition))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 2. Models:
+***
+
+<!------------------------------------------------------------------------------>
+### Welch t-test:
+
+On data aggregated by Mouse.
+Data is assumed heteroscedastic in relation to `Condition`.
+
+```{r}
+GluD2_mod_A_DD_per_cell_agg <- afex::mixed(
+  A_DD_per_cell ~ Condition + (0 + dCondition | ID),
+  data = GluD2_data_agg,
+  control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.nRE = "ignore"),
+  check_contrasts = F,
+  method = "S",
+  type = 3,
+  test_intercept = FALSE
+)
+
+parameters(GluD2_mod_A_DD_per_cell_agg$full_model, effects = "fixed", ci_method = "wald", drop = "Intercept")
+```
+
+
+<!------------------------------------------------------------------------------>
+### GLMM:
+
+**Gaussian:**
+
+```{r}
+GluD2_mod_A_DD_per_cell_gauss <- glmmTMB::glmmTMB(
+  A_DD_per_cell ~ Condition * Z + (1 | Mouse),
+  family = gaussian("log"),
+  data = GluD2_data,
+  REML = T
+)
+
+parameters::parameters(GluD2_mod_A_DD_per_cell_gauss)
+cat("\n\n")
+performance::performance(GluD2_mod_A_DD_per_cell_gauss)
+```
+
+**Gamma:**
+
+```{r}
+GluD2_mod_A_DD_per_cell_gamma <- glmmTMB::glmmTMB(
+  A_DD_per_cell ~ Condition * Z + (1 | Mouse),
+  family = Gamma("log"),
+  data = GluD2_data,
+  REML = T
+)
+
+parameters::parameters(GluD2_mod_A_DD_per_cell_gamma)
+cat("\n\n")
+performance::performance(GluD2_mod_A_DD_per_cell_gamma)
+```
+
+
+<!------------------------------------------------------------------------------>
+## 3. Model Diagnostics:
+***
+
+**Model comparison:**
+
+```{r}
+performance::compare_performance(GluD2_mod_A_DD_per_cell_gauss, GluD2_mod_A_DD_per_cell_gamma)
+```
+
+Best model:
+
+```{r}
+GluD2_mod_A_DD_per_cell <- GluD2_mod_A_DD_per_cell_gamma
+```
+
+
+<!------------------------------------------------------------------------------>
+### Residuals:
+
+```{r fig.width = 8}
+make_acf_plot(GluD2_mod_A_DD_per_cell)
+
+performance::check_model(GluD2_mod_A_DD_per_cell, detrend = TRUE)
+```
+
+
+<!------------------------------------------------------------------------------>
+### Predictions:
+
+```{r}
+nsim <- 300
+
+GluD2_mod_A_DD_per_cell_dharma <- DHARMa::simulateResiduals(GluD2_mod_A_DD_per_cell, plot = F, n = nsim, seed = getOption("seed"))
+GluD2_mod_A_DD_per_cell_dharma_t <- GluD2_mod_A_DD_per_cell_dharma$simulatedResponse |> t()
+```
+
+```{r fig.width = 10}
+ppc_plots(GluD2_mod_A_DD_per_cell, simulations = GluD2_mod_A_DD_per_cell_dharma_t, term = "Condition")
+ppc_plots(GluD2_mod_A_DD_per_cell, simulations = GluD2_mod_A_DD_per_cell_dharma_t, term = "Z")
+```
+
+```{r fig.width = 10}
+ppc_stat_plots(GluD2_mod_A_DD_per_cell, simulations = GluD2_mod_A_DD_per_cell_dharma_t, term = "Condition")
+ppc_stat_plots(GluD2_mod_A_DD_per_cell, simulations = GluD2_mod_A_DD_per_cell_dharma_t, term = "Z")
+```
+
+**Potential outliers:**
+
+```{r fig.width = 10}
+insight::get_data(GluD2_mod_A_DD_per_cell) |> 
+  rownames_to_column("ID") |> 
+  filter(ID %in% DHARMa::outliers(GluD2_mod_A_DD_per_cell_dharma))
+```
+
+
+
+<!------------------------------------------------------------------------------>
+## 4. Effects Analysis:
+***
+
+<!------------------------------------------------------------------------------>
+### Coefficients:
+
+**All effects (Wald):**
+
+```{r}
+parameters::parameters(
+  GluD2_mod_A_DD_per_cell, exponentiate = should_exp(GluD2_mod_A_DD_per_cell), 
+  ci_method = "Wald", p_adjust = "none", summary = T, digits = 3
+)
+```
+
+**Main effects (Wald):**
+
+```{r}
+car::Anova(GluD2_mod_A_DD_per_cell, type = 3)
+```
+
+**Main effects (LRT):**
+
+```{r}
+LRT(GluD2_mod_A_DD_per_cell, pred = "Condition")
+```
+
+<!------------------------------------------------------------------------------>
+### Marginal Effects:
+
+**Condition:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(GluD2_mod_A_DD_per_cell), dvs = insight::find_response(GluD2_mod_A_DD_per_cell), between = "Condition")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(GluD2_mod_A_DD_per_cell, specs = "Condition", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(GluD2_mod_A_DD_per_cell, specs = "Condition", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(GluD2_mod_A_DD_per_cell, specs = "Condition", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(GluD2_mod_A_DD_per_cell, xaxis = "Condition") |> 
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_DD_per_cell)}] Boxplots - by [Condition]"), subfolder = GluD2_target, dpi = 600, width = 5, height = 8)
+```
+
+**Z:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(GluD2_mod_A_DD_per_cell), dvs = insight::find_response(GluD2_mod_A_DD_per_cell), between = "Z")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(GluD2_mod_A_DD_per_cell, specs = "Z", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(GluD2_mod_A_DD_per_cell, specs = "Z", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(GluD2_mod_A_DD_per_cell, specs = "Z", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(GluD2_mod_A_DD_per_cell, xaxis = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_DD_per_cell)}] Boxplots - by [Z]"), subfolder = GluD2_target, dpi = 600, width = 4.5, height = 7)
+```
+
+**Condition:Z**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(GluD2_mod_A_DD_per_cell), dvs = insight::find_response(GluD2_mod_A_DD_per_cell), between = c("Condition", "Z"))
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(GluD2_mod_A_DD_per_cell, specs = ~ Condition | Z, type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(GluD2_mod_A_DD_per_cell, specs = ~ Condition | Z, type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(GluD2_mod_A_DD_per_cell, specs = ~ Condition | Z, type = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(GluD2_mod_A_DD_per_cell, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(GluD2_mod_A_DD_per_cell, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+```
+
+Plots:
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot(GluD2_mod_A_DD_per_cell, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_DD_per_cell)}] Boxplots - by [Condition] within [Z]"), subfolder = GluD2_target, dpi = 600, width = 10, height = 7)
+```
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot_inter(GluD2_mod_A_DD_per_cell, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_DD_per_cell)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = GluD2_target, dpi = 600, width = 10, height = 7)
+```
+
+
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# III. A_GLUD2:
+***
+
+<!------------------------------------------------------------------------------>
+## 1. Data Exploration:
+***
+
+<!------------------------------------------------------------------------------>
+### Distributions:
+
+**By Condition:**
+
+```{r}
+distribution_summary(GluD2_data, dvs = "A_GLUD2", between = "Condition")
+```
+
+```{r}
+hist_plot(GluD2_data, var = "A_GLUD2", facet = "Condition")
+```
+
+**By Z:**
+
+```{r}
+distribution_summary(GluD2_data, dvs = "A_GLUD2", between = "Z")
+```
+
+```{r}
+hist_plot(GluD2_data, var = "A_GLUD2", facet = "Z")
+```
+
+**By Condition:Z:**
+
+```{r}
+distribution_summary(GluD2_data, dvs = "A_GLUD2", between = c("Condition", "Z"))
+```
+
+```{r}
+hist_plot(GluD2_data, var = "A_GLUD2") + facet_grid(rows = vars(Z), cols = vars(Condition))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 2. Models:
+***
+
+<!------------------------------------------------------------------------------>
+### Welch t-test:
+
+On data aggregated by Mouse.
+Data is assumed heteroscedastic in relation to `Condition`.
+
+```{r}
+GluD2_mod_A_GLUD2_agg <- afex::mixed(
+  A_GLUD2 ~ Condition + (0 + dCondition | ID),
+  data = GluD2_data_agg,
+  control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.nRE = "ignore"),
+  check_contrasts = F,
+  method = "S",
+  type = 3,
+  test_intercept = FALSE
+)
+
+parameters(GluD2_mod_A_GLUD2_agg$full_model, effects = "fixed", ci_method = "wald", drop = "Intercept")
+```
+
+
+<!------------------------------------------------------------------------------>
+### GLMM:
+
+**Gaussian:**
+
+```{r}
+GluD2_mod_A_GLUD2_gauss <- glmmTMB::glmmTMB(
+  A_GLUD2 ~ Condition * Z + (1 | Mouse),
+  family = gaussian("log"),
+  data = GluD2_data,
+  REML = T
+)
+
+parameters::parameters(GluD2_mod_A_GLUD2_gauss)
+cat("\n\n")
+performance::performance(GluD2_mod_A_GLUD2_gauss)
+```
+
+**Gamma:**
+
+```{r}
+GluD2_mod_A_GLUD2_gamma <- glmmTMB::glmmTMB(
+  A_GLUD2 ~ Condition * Z + (1 | Mouse),
+  family = Gamma("log"),
+  data = GluD2_data,
+  REML = T
+)
+
+parameters::parameters(GluD2_mod_A_GLUD2_gamma)
+cat("\n\n")
+performance::performance(GluD2_mod_A_GLUD2_gamma)
+```
+
+
+<!------------------------------------------------------------------------------>
+## 3. Model Diagnostics:
+***
+
+**Model comparison:**
+
+```{r}
+performance::compare_performance(GluD2_mod_A_GLUD2_gauss, GluD2_mod_A_GLUD2_gamma)
+```
+
+Best model:
+
+```{r}
+GluD2_mod_A_GLUD2 <- GluD2_mod_A_GLUD2_gamma
+```
+
+
+<!------------------------------------------------------------------------------>
+### Residuals:
+
+```{r fig.width = 8}
+make_acf_plot(GluD2_mod_A_GLUD2)
+
+performance::check_model(GluD2_mod_A_GLUD2, detrend = TRUE)
+```
+
+
+<!------------------------------------------------------------------------------>
+### Predictions:
+
+```{r}
+nsim <- 300
+
+GluD2_mod_A_GLUD2_dharma <- DHARMa::simulateResiduals(GluD2_mod_A_GLUD2, plot = F, n = nsim, seed = getOption("seed"))
+GluD2_mod_A_GLUD2_dharma_t <- GluD2_mod_A_GLUD2_dharma$simulatedResponse |> t()
+```
+
+```{r fig.width = 10}
+ppc_plots(GluD2_mod_A_GLUD2, simulations = GluD2_mod_A_GLUD2_dharma_t, term = "Condition")
+ppc_plots(GluD2_mod_A_GLUD2, simulations = GluD2_mod_A_GLUD2_dharma_t, term = "Z")
+```
+
+```{r fig.width = 10}
+ppc_stat_plots(GluD2_mod_A_GLUD2, simulations = GluD2_mod_A_GLUD2_dharma_t, term = "Condition")
+ppc_stat_plots(GluD2_mod_A_GLUD2, simulations = GluD2_mod_A_GLUD2_dharma_t, term = "Z")
+```
+
+**Potential outliers:**
+
+```{r fig.width = 10}
+insight::get_data(GluD2_mod_A_GLUD2) |> 
+  rownames_to_column("ID") |> 
+  filter(ID %in% DHARMa::outliers(GluD2_mod_A_GLUD2_dharma))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 4. Effects Analysis:
+***
+
+<!------------------------------------------------------------------------------>
+### Coefficients:
+
+**All effects (Wald):**
+
+```{r}
+parameters::parameters(
+  GluD2_mod_A_GLUD2, exponentiate = should_exp(GluD2_mod_A_GLUD2), 
+  ci_method = "Wald", p_adjust = "none", summary = T, digits = 3
+)
+```
+
+**Main effects (Wald):**
+
+```{r}
+car::Anova(GluD2_mod_A_GLUD2, type = 3)
+```
+
+**Main effects (LRT):**
+
+```{r}
+LRT(GluD2_mod_A_GLUD2, pred = "Condition")
+```
+
+
+<!------------------------------------------------------------------------------>
+### Marginal Effects:
+
+**Condition:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(GluD2_mod_A_GLUD2), dvs = insight::find_response(GluD2_mod_A_GLUD2), between = "Condition")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(GluD2_mod_A_GLUD2, specs = "Condition", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(GluD2_mod_A_GLUD2, specs = "Condition", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(GluD2_mod_A_GLUD2, specs = "Condition", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(GluD2_mod_A_GLUD2, xaxis = "Condition") |> 
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_GLUD2)}] Boxplots - by [Condition]"), subfolder = GluD2_target, dpi = 600, width = 5, height = 8)
+```
+
+**Z:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(GluD2_mod_A_GLUD2), dvs = insight::find_response(GluD2_mod_A_GLUD2), between = "Z")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(GluD2_mod_A_GLUD2, specs = "Z", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(GluD2_mod_A_GLUD2, specs = "Z", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(GluD2_mod_A_GLUD2, specs = "Z", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(GluD2_mod_A_GLUD2, xaxis = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_GLUD2)}] Boxplots - by [Z]"), subfolder = GluD2_target, dpi = 600, width = 4.5, height = 7)
+```
+
+**Condition:Z**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(GluD2_mod_A_GLUD2), dvs = insight::find_response(GluD2_mod_A_GLUD2), between = c("Condition", "Z"))
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(GluD2_mod_A_GLUD2, specs = ~ Condition | Z, type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(GluD2_mod_A_GLUD2, specs = ~ Condition | Z, type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(GluD2_mod_A_GLUD2, specs = ~ Condition | Z, type = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(GluD2_mod_A_GLUD2, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(GluD2_mod_A_GLUD2, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+```
+
+Plots:
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot(GluD2_mod_A_GLUD2, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_GLUD2)}] Boxplots - by [Condition] within [Z]"), subfolder = GluD2_target, dpi = 600, width = 10, height = 7)
+```
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot_inter(GluD2_mod_A_GLUD2, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_GLUD2)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = GluD2_target, dpi = 600, width = 10, height = 7)
+```
+
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# IV. Vol_GLUD2:
+***
+
+<!------------------------------------------------------------------------------>
+## 1. Data Exploration:
+***
+
+<!------------------------------------------------------------------------------>
+### Distributions:
+
+**By Condition:**
+
+```{r}
+distribution_summary(GluD2_data, dvs = "Vol_GLUD2", between = "Condition")
+```
+
+```{r}
+hist_plot(GluD2_data, var = "Vol_GLUD2", facet = "Condition")
+```
+
+**By Z:**
+
+```{r}
+distribution_summary(GluD2_data, dvs = "Vol_GLUD2", between = "Z")
+```
+
+```{r}
+hist_plot(GluD2_data, var = "Vol_GLUD2", facet = "Z")
+```
+
+**By Condition:Z:**
+
+```{r}
+distribution_summary(GluD2_data, dvs = "Vol_GLUD2", between = c("Condition", "Z"))
+```
+
+```{r}
+hist_plot(GluD2_data, var = "Vol_GLUD2") + facet_grid(rows = vars(Z), cols = vars(Condition))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 2. Models:
+***
+
+<!------------------------------------------------------------------------------>
+### Welch t-test:
+
+On data aggregated by Mouse.
+Data is assumed heteroscedastic in relation to `Condition`.
+
+```{r}
+GluD2_mod_Vol_GLUD2_agg <- afex::mixed(
+  Vol_GLUD2 ~ Condition + (0 + dCondition | ID),
+  data = GluD2_data_agg,
+  control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.nRE = "ignore"),
+  check_contrasts = F,
+  method = "S",
+  type = 3,
+  test_intercept = FALSE
+)
+
+parameters(GluD2_mod_Vol_GLUD2_agg$full_model, effects = "fixed", ci_method = "wald", drop = "Intercept")
+```
+
+
+<!------------------------------------------------------------------------------>
+### GLMM:
+
+**Gaussian:**
+
+```{r}
+GluD2_mod_Vol_GLUD2_gauss <- glmmTMB::glmmTMB(
+  Vol_GLUD2 ~ Condition * Z + (1 | Mouse),
+  family = gaussian("log"),
+  data = GluD2_data,
+  REML = T
+)
+
+parameters::parameters(GluD2_mod_Vol_GLUD2_gauss)
+cat("\n\n")
+performance::performance(GluD2_mod_Vol_GLUD2_gauss)
+```
+
+**Gamma:**
+
+```{r}
+GluD2_mod_Vol_GLUD2_gamma <- glmmTMB::glmmTMB(
+  Vol_GLUD2 ~ Condition * Z + (1 | Mouse),
+  family = Gamma("log"),
+  data = GluD2_data,
+  REML = T,
+  control = glmmTMBControl(optimizer = optim, optArgs = list(method = "BFGS"))
+)
+
+parameters::parameters(GluD2_mod_Vol_GLUD2_gamma)
+cat("\n\n")
+performance::performance(GluD2_mod_Vol_GLUD2_gamma)
+```
+
+<!------------------------------------------------------------------------------>
+## 3. Model Diagnostics:
+***
+
+**Model comparison:**
+
+```{r}
+performance::compare_performance(GluD2_mod_Vol_GLUD2_gauss, GluD2_mod_Vol_GLUD2_gamma)
+```
+
+Best model:
+
+```{r}
+GluD2_mod_Vol_GLUD2 <- GluD2_mod_Vol_GLUD2_gamma
+```
+
+
+<!------------------------------------------------------------------------------>
+### Residuals:
+
+```{r fig.width = 8}
+make_acf_plot(GluD2_mod_Vol_GLUD2)
+
+performance::check_model(GluD2_mod_Vol_GLUD2, detrend = TRUE)
+```
+
+
+<!------------------------------------------------------------------------------>
+### Predictions:
+
+```{r}
+nsim <- 300
+
+GluD2_mod_Vol_GLUD2_dharma <- DHARMa::simulateResiduals(GluD2_mod_Vol_GLUD2, plot = F, n = nsim, seed = getOption("seed"))
+GluD2_mod_Vol_GLUD2_dharma_t <- GluD2_mod_Vol_GLUD2_dharma$simulatedResponse |> t()
+```
+
+```{r fig.width = 10}
+ppc_plots(GluD2_mod_Vol_GLUD2, simulations = GluD2_mod_Vol_GLUD2_dharma_t, term = "Condition")
+ppc_plots(GluD2_mod_Vol_GLUD2, simulations = GluD2_mod_Vol_GLUD2_dharma_t, term = "Z")
+```
+
+```{r fig.width = 10}
+ppc_stat_plots(GluD2_mod_Vol_GLUD2, simulations = GluD2_mod_Vol_GLUD2_dharma_t, term = "Condition")
+ppc_stat_plots(GluD2_mod_Vol_GLUD2, simulations = GluD2_mod_Vol_GLUD2_dharma_t, term = "Z")
+```
+
+**Potential outliers:**
+
+```{r fig.width = 10}
+insight::get_data(GluD2_mod_Vol_GLUD2) |> 
+  rownames_to_column("ID") |> 
+  filter(ID %in% DHARMa::outliers(GluD2_mod_Vol_GLUD2_dharma))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 4. Effects Analysis:
+***
+
+<!------------------------------------------------------------------------------>
+### Coefficients:
+
+**All effects (Wald):**
+
+```{r}
+parameters::parameters(
+  GluD2_mod_Vol_GLUD2, exponentiate = should_exp(GluD2_mod_Vol_GLUD2), 
+  ci_method = "Wald", p_adjust = "none", summary = T, digits = 3
+)
+```
+
+**Main effects (Wald):**
+
+```{r}
+car::Anova(GluD2_mod_Vol_GLUD2, type = 3)
+```
+
+**Main effects (LRT):**
+
+```{r}
+LRT(GluD2_mod_Vol_GLUD2, pred = "Condition")
+```
+
+<!------------------------------------------------------------------------------>
+### Marginal Effects:
+
+**Condition:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(GluD2_mod_Vol_GLUD2), dvs = insight::find_response(GluD2_mod_Vol_GLUD2), between = "Condition")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(GluD2_mod_Vol_GLUD2, specs = "Condition", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(GluD2_mod_Vol_GLUD2, specs = "Condition", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(GluD2_mod_Vol_GLUD2, specs = "Condition", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(GluD2_mod_Vol_GLUD2, xaxis = "Condition") |> 
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_Vol_GLUD2)}] Boxplots - by [Condition]"), subfolder = GluD2_target, dpi = 600, width = 5, height = 8)
+```
+
+**Z:**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(GluD2_mod_Vol_GLUD2), dvs = insight::find_response(GluD2_mod_Vol_GLUD2), between = "Z")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(GluD2_mod_Vol_GLUD2, specs = "Z", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(GluD2_mod_Vol_GLUD2, specs = "Z", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(GluD2_mod_Vol_GLUD2, specs = "Z", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 4, fig.height = 7}
+make_signif_boxplot(GluD2_mod_Vol_GLUD2, xaxis = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_Vol_GLUD2)}] Boxplots - by [Z]"), subfolder = GluD2_target, dpi = 600, width = 4.5, height = 7)
+```
+
+**Condition:Z**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(GluD2_mod_Vol_GLUD2), dvs = insight::find_response(GluD2_mod_Vol_GLUD2), between = c("Condition", "Z"))
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(GluD2_mod_Vol_GLUD2, specs = ~ Condition | Z, type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(GluD2_mod_Vol_GLUD2, specs = ~ Condition | Z, type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(GluD2_mod_Vol_GLUD2, specs = ~ Condition | Z, type = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(GluD2_mod_Vol_GLUD2, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(GluD2_mod_Vol_GLUD2, specs = ~ Condition | Z, trans = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+```
+
+Plots:
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot(GluD2_mod_Vol_GLUD2, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_Vol_GLUD2)}] Boxplots - by [Condition] within [Z]"), subfolder = GluD2_target, dpi = 600, width = 10, height = 7)
+```
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot_inter(GluD2_mod_Vol_GLUD2, xaxis = "Condition", facet = "Z") |> 
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_Vol_GLUD2)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = GluD2_target, dpi = 600, width = 10, height = 7)
+```
+
