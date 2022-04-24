@@ -531,15 +531,15 @@
     },
     "datawizard": {
       "Package": "datawizard",
-      "Version": "0.4.0.11",
+      "Version": "0.4.0.12",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteUsername": "easystats",
       "RemoteRepo": "datawizard",
       "RemoteRef": "master",
-      "RemoteSha": "8de799188515607eb1db228aa6996873689551e1",
-      "Hash": "d1c3ab3e25b3356cc8e76999e801e354",
+      "RemoteSha": "2739726fa3a2e02e0667219cda1059d1635fa77b",
+      "Hash": "0f24007b6019a099085c26b0d5a7c136",
       "Requirements": [
         "insight"
       ]
@@ -1371,10 +1371,16 @@
     },
     "parameters": {
       "Package": "parameters",
-      "Version": "0.17.0",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "f226a06220ee5a17360aa9cc7790fa1b",
+      "Version": "0.17.0.9",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteUsername": "easystats",
+      "RemoteRepo": "parameters",
+      "RemoteRef": "main",
+      "RemoteSha": "5a54bdd934b820c8deb38222e09b80fc58f050bd",
+      "Remotes": "easystats/insight, easystats/bayestestR, easystats/datawizard",
+      "Hash": "0db2c2db1452351f018e6200569e8326",
       "Requirements": [
         "bayestestR",
         "datawizard",
