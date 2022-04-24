@@ -20,7 +20,7 @@ Data and R companion code for (Leroux S., Rodriguez-Duboc A., Arabo A., Basille-
 
 ## 💻 Repository structure:
 
-- `LTAoP.RProj`: R Studio project (open this first).
+- `LT-AoP-22.RProj`: R Studio project (open this first).
 - `analysis`: Analysis (R Markdown) files, split by sub-section (e.g. behavioral data, ...). 
   - The first code chunck of any of the .Rmd files will load all the packages required for the project.
 - `data`: Raw data used for this paper.
