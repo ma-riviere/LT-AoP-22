@@ -3,7 +3,7 @@
  <h1>Intermittent hypoxia and cerebellar development</h1>
 
  [![License](https://img.shields.io/badge/license-MIT-blue.svg)](/LICENSE)
-<!--[![DOI](https://zenodo.org/badge/48144167.svg)](https://zenodo.org/badge/latestdoi/48144167)-->
+ [![DOI](https://zenodo.org/badge/484983414.svg)](https://zenodo.org/badge/latestdoi/484983414)
 
 </div>
 
