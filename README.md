@@ -35,11 +35,11 @@ Data and R companion code for (Leroux S., Rodriguez-Duboc A., Arabo A., Basille-
 
 ## ✨ Contributors:
 
-- **Rivière Marc-Aurèle**:  
+- **Marc-Aurèle Rivière**:  
 [![ORCID](https://img.shields.io/badge/ORCID-A6CE39?style=flat-square&labelColor=white&logo=orcid&logoColor=A6CE39)][ORCID_MAR]
 [![Research Gate](https://img.shields.io/badge/ResearchGate-00CCBB?style=flat-square&labelColor=white&logo=researchgate&logoColor=00CCBB)][RG_MAR]
 
-- **Rodriguez-Duboc Agalic**:  
+- **Agalic Rodriguez-Duboc**:  
 [![ORCID](https://img.shields.io/badge/ORCID-A6CE39?style=flat-square&labelColor=white&logo=orcid&logoColor=A6CE39)][ORCID_ARD]
 [![Research Gate](https://img.shields.io/badge/ResearchGate-00CCBB?style=flat-square&labelColor=white&logo=researchgate&logoColor=00CCBB)][RG_ARD]
 
