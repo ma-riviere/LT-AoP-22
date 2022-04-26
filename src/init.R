@@ -21,7 +21,7 @@ if (!startsWith(.libPaths()[1], here::here())) {
 
 project_base_scripts <- c("logger.R", "packages.R", "utils.R", "authors.R", "packman.R")
 
-sapply(project_base_scripts, \(f) source(here::here("src", f), echo = F))
+tmp <- sapply(project_base_scripts, \(f) source(here::here("src", f), echo = F))
 
 init_project_packages()
 
@@ -29,4 +29,4 @@ log.title("[SETUP] Loading additional src scripts ...")
 
 project_scripts <- fs::dir_ls(path = here::here("src"), type = "file", glob = "*.R") |> fs::path_file()
 
-sapply(project_scripts[which(project_scripts %ni% c("init.R", project_base_scripts))], \(f) source(here::here("src", f), echo = F))
+tmp <- sapply(project_scripts[which(project_scripts %ni% c("init.R", project_base_scripts))], \(f) source(here::here("src", f), echo = F))
