@@ -2,13 +2,7 @@
 #### Stats helper functions ####
 #==============================#
 
-is_outlier <- function(x) {
-  return(x < quantile(x, 0.25) - 1.5 * IQR(x) | x > quantile(x, 0.75) + 1.5 * IQR(x))
-}
-
-should_exp <- function(mod) {
-  return(mod$modelInfo$family$link %in% c("log", "logit"))
-}
+should_exp <- \(mod) insight::get_family(mod)$link %in% c("log", "logit")
 
 distribution_summary <- function(data, dvs, between = "Condition") {
   data |> select(all_of(between), all_of(dvs)) |> 
@@ -69,7 +63,7 @@ find_coefficient_count <- function(data, predictors, interactions = NULL) {
   return(coef_count + 1) # Add one for the intercept
 }
 
-LRT <- function(mod, pred = "Condition") {
+LRT <- function(mod, pred = "Condition", print_eq = FALSE) {
   data <- insight::get_data(mod)
   resp <- insight::find_response(mod)
   link <- insight::link_function(mod)
@@ -170,20 +164,21 @@ LRT <- function(mod, pred = "Condition") {
       )
     }
   )
-
+  
   formula_full <- find_formula_formatted(mod_full)
   formula_reduced <- find_formula_formatted(mod_reduced)
-  
-  cat(crayon::blue(glue::glue("{crayon::bold('\n[LRT]')} Full formula: {formula_full}\n")))
-  cat(crayon::blue(glue::glue("{crayon::bold('\n[LRT]')} Reduced formula: {formula_reduced}\n")))
-  
+
   res <- stats::anova(mod_full, mod_reduced, test = "LRT") |> as.data.frame() |> rownames_to_column("Model") |> janitor::clean_names()
-  # res <- performance::test_lrt(mod_full, mod_reduced, estimator = "OLS")
   
-  cat(paste0(
-    "\n\n$\\mathcal{X}_", glue("{res$chi_df[2]}"), "^2", glue(" = {round(res$chisq[2], 3)}; "),
-    scales::pvalue(res$pr_chisq[2], add_p = T, prefix = c("p < ", "p = ", "p > ")), "$"
-  ))
+  if (print_eq) {
+    cat(crayon::blue(glue::glue("{crayon::bold('\n[LRT]')} Full formula: {formula_full}\n")))
+    cat(crayon::blue(glue::glue("{crayon::bold('\n[LRT]')} Reduced formula: {formula_reduced}\n")))
+    
+    cat(paste0(
+      "\n\n$\\mathcal{X}_", glue("{res$chi_df[2]}"), "^2", glue(" = {round(res$chisq[2], 3)}; "),
+      scales::pvalue(res$pr_chisq[2], add_p = T, prefix = c("p < ", "p = ", "p > ")), "$"
+    ))
+  }
   
   return(res)
 }

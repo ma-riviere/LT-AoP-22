@@ -6,7 +6,9 @@ log.main("[UTILS] Loading Utils ...")
 
 "%ni%" <- Negate("%in%")
 
-"%s+%" <- function(lhs, rhs) paste0(lhs, rhs)
+"%s+%" <- \(lhs, rhs) paste0(lhs, rhs)
+
+"%ne%" <- \(lhs, rhs) if(is.null(lhs) || rlang::is_empty(lhs) || lhs == "") return(rhs) else return(lhs)
 
 
 ### From: https://michaelbarrowman.co.uk/post/getting-a-variable-name-in-a-pipeline/

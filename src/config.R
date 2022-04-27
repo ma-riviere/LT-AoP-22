@@ -36,11 +36,6 @@ knitr::opts_chunk$set(
 #### Packages options ####
 #------------------------#
 
-if (purrr::is_empty(globalCallingHandlers())) {
-  log.note("[CONFIG] Activating `rlang` new global trace")
-  rlang::global_entrace()
-}
-
 afex::afex_options(
   type = 3,
   method_mixed = "KR",
