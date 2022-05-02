@@ -1,33 +1,36 @@
 <div align="center">
  
  <h1>Intermittent hypoxia and cerebellar development</h1>
+ <h3><i>Main branch</i></h3>
 
  [![License](https://img.shields.io/badge/license-MIT-blue.svg)](/LICENSE)
  [![DOI](https://zenodo.org/badge/484983414.svg)](https://zenodo.org/badge/latestdoi/484983414)
+ 
+ <a href = "https://ma-riviere.github.io/LT-AoP-22/">Link to the documentation</a>
 
 </div>
 
-Data and R companion code for (Leroux S., Rodriguez-Duboc A., Arabo A., Basille-Dugay M., Vaudry D., & Burel D.) paper: *"Hypoxia is associated with a retardation of cerebellar development and long-term functional deficits in a mouse model of apnea of prematurity"*
+Data and R companion code for (Leroux S., Rodriguez-Duboc A., Arabo A., Basille-Dugay M., Vaudry D., & Burel D., 2022) paper: *"Hypoxia is associated with a retardation of cerebellar development and long-term functional deficits in a mouse model of apnea of prematurity"*
 
 ## 📖 Citation:
 
-- **Paper:** *To be disclosed*  
+- **Paper:** *In Press*  
 
-- **Code:** Marc-Aurèle Rivière, & Agalic Rodriguez-Duboc. (2022). ma-riviere/LT-AoP-22: (V1.0.1). Zenodo. https://doi.org/10.5281/zenodo.6481030
+- **Code:** Marc-Aurèle Rivière, & Agalic Rodriguez-Duboc. (2022). ma-riviere/LT-AoP-22: (V1.1.0). Zenodo. https://doi.org/10.5281/zenodo.6480947
 
 ## ❔ Requirements:
 
-- R version 4.1 (or later). We recommend using R 4.1.3 since the project was last tested using that version.
+- R version 4.1 or 4.2
 
 ## 💻 Repository structure:
 
 - `LT-AoP-22.RProj`: R Studio project (open this first).
-- `analysis`: Analysis (R Markdown) files, split by sub-section (e.g. behavioral data, ...). 
-  - The first code chunck of any of the .Rmd files will load all the packages required for the project.
-- `data`: Raw data used for this paper.
-- `fig`: Figures outputted by the RMarkdown files.
-- `R`: R scripts declaring the functions called withing the RMarkdown analysis files (e.g. `viz.R` for the figures, `data.R` for the data loading).
-- `config.yml`: Specifies the paths to the data files.
+- `analysis`: Analysis (R Markdown) files, split by thematic (e.g. behavioral data, ...). 
+  - The first code chunk of any of the .Rmd files will load all the packages required for the project.
+- `data`: The raw data used for this paper.
+- `fig`: The figures outputted by the RMarkdown files.
+- `R`: R scripts declaring the functions called withing the analysis files (e.g. `viz.R` for the figures, `data.R` for the data loading).
+- `config.yml`: Indexes the paths to various external files used within the code (e.g. data, templates, ...).
 
 ## 📜 Licence:
 

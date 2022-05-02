@@ -15,3 +15,9 @@ default:
     behavior_adults_path: !expr here::here("data", "Behavior_Adults_Long.xlsx")
     thickness_path: !expr here::here("data", "Thickness.xlsx")
     ROS_path: !expr here::here("data", "ROS_Percentage.xlsx")
+  templates:
+    base: !expr here::here("quarto", "content", "_templates", "_base_template.qmd")
+    plot: !expr here::here("quarto", "content", "_templates", "_plot_template.qmd")
+    mod: !expr here::here("quarto", "content", "_templates", "_mod_template.qmd")
+    effects: !expr here::here("quarto", "content", "_templates", "_effects_template.qmd")
+    effects_temporal: !expr here::here("quarto", "content", "_templates", "_effects_temporal_template.qmd")

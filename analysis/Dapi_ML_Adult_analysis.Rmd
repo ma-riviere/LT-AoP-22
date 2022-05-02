@@ -1,5 +1,5 @@
 ```{r include = F, echo = F}
-source("../src/init.R", echo = F)
+source("../src/setup.R", echo = F)
 ```
 
 <!------------------------------------------------------------------------------>
@@ -280,7 +280,7 @@ Plot:
 
 ```{r fig.width = 5, fig.height = 8}
 make_signif_boxplot(DAPI_ML_Ad_mod_A_ML, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_A_ML)}] Boxplots - by [Condition]"), subfolder = DAPI_ML_Ad_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_A_ML)}] Boxplots - by [Condition]"), subfolder = DAPI_ML_Ad_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 **Z**
@@ -315,7 +315,7 @@ Plot:
 
 ```{r fig.width = 3, fig.height = 5}
 (make_signif_boxplot(DAPI_ML_Ad_mod_A_ML, xaxis = "Z") + scale_color_viridis_d()) |> 
-  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_A_ML)}] Boxplots - by [Z]"), subfolder = DAPI_ML_Ad_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_A_ML)}] Boxplots - by [Z]"), subfolder = DAPI_ML_Ad_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 **Condition:Z**
@@ -360,12 +360,12 @@ Plots:
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot(DAPI_ML_Ad_mod_A_ML, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_A_ML)}] Boxplots - by [Condition] within [Z]"), subfolder = DAPI_ML_Ad_target, dpi = 600, width = 6, height = 5)
+  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_A_ML)}] Boxplots - by [Condition] within [Z]"), subfolder = DAPI_ML_Ad_target, dpi = dpi_save_png, width = 6, height = 5)
 ```
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot_inter(DAPI_ML_Ad_mod_A_ML, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_A_ML)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = DAPI_ML_Ad_target, dpi = 600, width = 6, height = 5)
+  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_A_ML)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = DAPI_ML_Ad_target, dpi = dpi_save_png, width = 6, height = 5)
 ```
 
 
@@ -602,7 +602,7 @@ Plot:
 
 ```{r fig.width = 5, fig.height = 8}
 make_signif_boxplot(DAPI_ML_Ad_mod_A_DAPI, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_A_DAPI)}] Boxplots - by [Condition]"), subfolder = DAPI_ML_Ad_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_A_DAPI)}] Boxplots - by [Condition]"), subfolder = DAPI_ML_Ad_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 **Z**
@@ -612,7 +612,7 @@ Marginal Means:
 ```{r}
 log.main("===[Observed]===\n")
 
-distribution_summary(insight::get_data(DAPI_ML_Ad_mod_A_DAPI), dvs = insight::find_response(DAPI_ML_Ad_mod_Vol_DAPI), between = "Z")
+distribution_summary(insight::get_data(DAPI_ML_Ad_mod_A_DAPI), dvs = insight::find_response(DAPI_ML_Ad_mod_A_DAPI), between = "Z")
 
 log.main("===[Emmeans]===\n")
 
@@ -637,7 +637,7 @@ Plot:
 
 ```{r fig.width = 3, fig.height = 5}
 (make_signif_boxplot(DAPI_ML_Ad_mod_A_DAPI, xaxis = "Z") + scale_color_viridis_d()) |> 
-  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_A_DAPI)}] Boxplots - by [Z]"), subfolder = DAPI_ML_Ad_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_A_DAPI)}] Boxplots - by [Z]"), subfolder = DAPI_ML_Ad_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 **Condition:Z**
@@ -682,12 +682,12 @@ Plots:
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot(DAPI_ML_Ad_mod_A_DAPI, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_A_DAPI)}] Boxplots - by [Condition] within [Z]"), subfolder = DAPI_ML_Ad_target, dpi = 600, width = 6, height = 5)
+  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_A_DAPI)}] Boxplots - by [Condition] within [Z]"), subfolder = DAPI_ML_Ad_target, dpi = dpi_save_png, width = 6, height = 5)
 ```
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot_inter(DAPI_ML_Ad_mod_A_DAPI, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_A_DAPI)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = DAPI_ML_Ad_target, dpi = 600, width = 6, height = 5)
+  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_A_DAPI)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = DAPI_ML_Ad_target, dpi = dpi_save_png, width = 6, height = 5)
 ```
 
 
@@ -925,7 +925,7 @@ Plot:
 
 ```{r fig.width = 5, fig.height = 8}
 make_signif_boxplot(DAPI_ML_Ad_mod_Vol_DAPI, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_Vol_DAPI)}] Boxplots - by [Condition]"), subfolder = DAPI_ML_Ad_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_Vol_DAPI)}] Boxplots - by [Condition]"), subfolder = DAPI_ML_Ad_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 **Z**
@@ -960,7 +960,7 @@ Plot:
 
 ```{r fig.width = 3, fig.height = 5}
 (make_signif_boxplot(DAPI_ML_Ad_mod_Vol_DAPI, xaxis = "Z") + scale_color_viridis_d()) |> 
-  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_Vol_DAPI)}] Boxplots - by [Z]"), subfolder = DAPI_ML_Ad_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_Vol_DAPI)}] Boxplots - by [Z]"), subfolder = DAPI_ML_Ad_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 **Condition:Z**
@@ -1005,11 +1005,11 @@ Plots:
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot(DAPI_ML_Ad_mod_Vol_DAPI, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_Vol_DAPI)}] Boxplots - by [Condition] within [Z]"), subfolder = DAPI_ML_Ad_target, dpi = 600, width = 6, height = 5)
+  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_Vol_DAPI)}] Boxplots - by [Condition] within [Z]"), subfolder = DAPI_ML_Ad_target, dpi = dpi_save_png, width = 6, height = 5)
 ```
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot_inter(DAPI_ML_Ad_mod_Vol_DAPI, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_Vol_DAPI)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = DAPI_ML_Ad_target, dpi = 600, width = 6, height = 5)
+  save_png(filename = glue("[{get_model_tag(DAPI_ML_Ad_mod_Vol_DAPI)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = DAPI_ML_Ad_target, dpi = dpi_save_png, width = 6, height = 5)
 ```
 

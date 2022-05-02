@@ -1,5 +1,5 @@
 ```{r include = F, echo = F}
-source("../src/init.R", echo = F)
+source("../src/setup.R", echo = F)
 ```
 
 <!------------------------------------------------------------------------------>
@@ -191,7 +191,7 @@ ppc_stat_plots(BrDU_mod_Dens_BrDU_EGL, simulations = BrDU_mod_Dens_BrDU_EGL_dhar
 
 ```{r}
 insight::get_data(BrDU_mod_Dens_BrDU_EGL) |> 
-  filter(!is.na(Dens_BrDU)) |> 
+  filter(!is.na(Dens_BrDU_EGL)) |> 
   rownames_to_column("ID") |> 
   filter(ID %in% DHARMa::outliers(BrDU_mod_Dens_BrDU_EGL_dharma))
 ```
@@ -261,7 +261,7 @@ Plot:
 
 ```{r fig.width = 4.5, fig.height = 7}
 make_signif_boxplot(BrDU_mod_Dens_BrDU_EGL, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(BrDU_mod_Dens_BrDU_EGL)}] Boxplots - by [Condition]"), subfolder = BrDU_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(BrDU_mod_Dens_BrDU_EGL)}] Boxplots - by [Condition]"), subfolder = BrDU_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 
@@ -464,7 +464,7 @@ Plot:
 
 ```{r fig.width = 4.5, fig.height = 7}
 make_signif_boxplot(BrDU_mod_Dens_BrDU_IGL, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(BrDU_mod_Dens_BrDU_IGL)}] Boxplots - by [Condition]"), subfolder = BrDU_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(BrDU_mod_Dens_BrDU_IGL)}] Boxplots - by [Condition]"), subfolder = BrDU_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 
@@ -646,7 +646,7 @@ Plot:
 
 ```{r fig.width = 5, fig.height = 8}
 # make_signif_boxplot(BrDU_mod_Dens_BrDU, xaxis = "Condition") |> 
-#   save_png(filename = glue("[{get_model_tag(BrDU_mod_Dens_BrDU)}] Boxplots - by [Condition]"), subfolder = BrDU_target, dpi = 600, width = 5, height = 8)
+#   save_png(filename = glue("[{get_model_tag(BrDU_mod_Dens_BrDU)}] Boxplots - by [Condition]"), subfolder = BrDU_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 **Condition:Layer**
@@ -691,10 +691,10 @@ Plots:
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot(BrDU_mod_Dens_BrDU, xaxis = "Condition", facet = "Layer") |> 
-  save_png(filename = glue("[{get_model_tag(BrDU_mod_Dens_BrDU)}] Boxplots - by [Condition] within [Layer]"), subfolder = BrDU_target, dpi = 600, width = 6, height = 5)
+  save_png(filename = glue("[{get_model_tag(BrDU_mod_Dens_BrDU)}] Boxplots - by [Condition] within [Layer]"), subfolder = BrDU_target, dpi = dpi_save_png, width = 6, height = 5)
 ```
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot_inter(BrDU_mod_Dens_BrDU, xaxis = "Condition", facet = "Layer") |> 
-  save_png(filename = glue("[{get_model_tag(BrDU_mod_Dens_BrDU)}] Interaction Boxplots - by [Condition] within [Layer]"), subfolder = BrDU_target, dpi = 600, width = 6, height = 5)
+  save_png(filename = glue("[{get_model_tag(BrDU_mod_Dens_BrDU)}] Interaction Boxplots - by [Condition] within [Layer]"), subfolder = BrDU_target, dpi = dpi_save_png, width = 6, height = 5)
 ```

@@ -1,5 +1,5 @@
 ```{r include = F, echo = F}
-source("../src/init.R", echo = F)
+source("../src/setup.R", echo = F)
 ```
 
 
@@ -132,7 +132,7 @@ compositional_plot(thick_P21_data, thick_P21_responses, prefix = "Thick") + scal
 
 ```{r}
 compositional_plot(thick_data, thick_responses, prefix = "Thick") |> 
-  save_png(filename = glue("[Combined] - Compositional Plot"), subfolder = Thickness_target, dpi = 600, width = 5, height = 4)
+  save_png(filename = glue("[Combined] - Compositional Plot"), subfolder = Thickness_target, dpi = dpi_save_png, width = 5, height = 4)
 ```
 
 
@@ -326,7 +326,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(thick_P12_mod_Tot, xaxis = "Condition") |> 
-  save_png(filename = glue("[P12] - [{get_model_tag(thick_P12_mod_Tot)}] Boxplots - by [Condition]"), subfolder = Thickness_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[P12] - [{get_model_tag(thick_P12_mod_Tot)}] Boxplots - by [Condition]"), subfolder = Thickness_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 
@@ -513,7 +513,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(thick_P12_mod_EGL, xaxis = "Condition") |> 
-  save_png(filename = glue("[P12] - [{get_model_tag(thick_P12_mod_EGL)}] Boxplots - by [Condition]"), subfolder = Thickness_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[P12] - [{get_model_tag(thick_P12_mod_EGL)}] Boxplots - by [Condition]"), subfolder = Thickness_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 
@@ -701,7 +701,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(thick_P12_mod_MLPL, xaxis = "Condition") |> 
-  save_png(filename = glue("[P12] - [{get_model_tag(thick_P12_mod_MLPL)}] Boxplots - by [Condition]"), subfolder = Thickness_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[P12] - [{get_model_tag(thick_P12_mod_MLPL)}] Boxplots - by [Condition]"), subfolder = Thickness_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 
@@ -888,7 +888,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(thick_P12_mod_IGL, xaxis = "Condition") |> 
-  save_png(filename = glue("[P12] - [{get_model_tag(thick_P12_mod_IGL)}] Boxplots - by [Condition]"), subfolder = Thickness_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[P12] - [{get_model_tag(thick_P12_mod_IGL)}] Boxplots - by [Condition]"), subfolder = Thickness_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 
@@ -1083,7 +1083,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(thick_P21_mod_Tot, xaxis = "Condition") |> 
-  save_png(filename = glue("[P21] - [{get_model_tag(thick_P21_mod_Tot)}] Boxplots - by [Condition]"), subfolder = Thickness_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[P21] - [{get_model_tag(thick_P21_mod_Tot)}] Boxplots - by [Condition]"), subfolder = Thickness_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 
@@ -1270,7 +1270,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(thick_P21_mod_MLPL, xaxis = "Condition") |> 
-  save_png(filename = glue("[P21] - [{get_model_tag(thick_P21_mod_MLPL)}] Boxplots - by [Condition]"), subfolder = Thickness_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[P21] - [{get_model_tag(thick_P21_mod_MLPL)}] Boxplots - by [Condition]"), subfolder = Thickness_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 
@@ -1458,7 +1458,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(thick_P21_mod_GL, xaxis = "Condition") |> 
-  save_png(filename = glue("[P21] - [{get_model_tag(thick_P21_mod_GL)}] Boxplots - by [Condition]"), subfolder = Thickness_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[P21] - [{get_model_tag(thick_P21_mod_GL)}] Boxplots - by [Condition]"), subfolder = Thickness_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 
@@ -1633,7 +1633,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3, echo = F}
 # make_signif_boxplot(thick_combined_mod_Tot, xaxis = "Condition") |> 
-#  save_png(filename = glue("[Combined] - [{get_model_tag(thick_combined_mod_Tot)}] Boxplots - by [Condition]"), subfolder = Thickness_target, dpi = 600, width = 5, height = 8)
+#  save_png(filename = glue("[Combined] - [{get_model_tag(thick_combined_mod_Tot)}] Boxplots - by [Condition]"), subfolder = Thickness_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 ##### Stage:
@@ -1668,7 +1668,7 @@ Plot:
 
 ```{r fig.width = 5, fig.height = 8}
 (make_signif_boxplot(thick_combined_mod_Tot, xaxis = "Stage") + scale_color_viridis_d()) |> 
-  save_png(filename = glue("[Combined] - [{get_model_tag(thick_combined_mod_Tot)}] Boxplots - by [Stage]"), subfolder = Thickness_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[Combined] - [{get_model_tag(thick_combined_mod_Tot)}] Boxplots - by [Stage]"), subfolder = Thickness_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 ##### Condition:Stage
@@ -1715,7 +1715,7 @@ Plots:
 make_signif_boxplot(thick_combined_mod_Tot, xaxis = "Condition", facet = "Stage") |>
   save_png(
     filename = glue("[Combined] - [{get_model_tag(thick_combined_mod_Tot)}] Boxplots - by [Condition] within [Stage]"), 
-    subfolder = Thickness_target, dpi = 600, width = 10, height = 7
+    subfolder = Thickness_target, dpi = dpi_save_png, width = 10, height = 7
   )
 ```
 
@@ -1723,7 +1723,7 @@ make_signif_boxplot(thick_combined_mod_Tot, xaxis = "Condition", facet = "Stage"
 make_signif_boxplot_inter(thick_combined_mod_Tot, xaxis = "Condition", facet = "Stage") |>
   save_png(
     filename = glue("[Combined] - [{get_model_tag(thick_combined_mod_Tot)}] Interaction Boxplots - by [Condition] within [Stage]"), 
-    subfolder = Thickness_target, dpi = 600, width = 10, height = 7
+    subfolder = Thickness_target, dpi = dpi_save_png, width = 10, height = 7
   )
 ```
 
@@ -1917,7 +1917,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3, echo = F}
 # make_signif_boxplot(thick_combined_mod_MLPL, xaxis = "Condition") |> 
-#   save_png(filename = glue("[Combined] - [{get_model_tag(thick_combined_mod_MLPL)}] Boxplots - by [Condition]"), subfolder = Thickness_target, dpi = 600, width = 5, height = 8)
+#   save_png(filename = glue("[Combined] - [{get_model_tag(thick_combined_mod_MLPL)}] Boxplots - by [Condition]"), subfolder = Thickness_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 ##### Stage:
@@ -1952,7 +1952,7 @@ Plot:
 
 ```{r fig.width = 5, fig.height = 8}
 (make_signif_boxplot(thick_combined_mod_MLPL, xaxis = "Stage") + scale_color_viridis_d()) |> 
-  save_png(filename = glue("[Combined] - [{get_model_tag(thick_combined_mod_MLPL)}] Boxplots - by [Stage]"), subfolder = Thickness_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[Combined] - [{get_model_tag(thick_combined_mod_MLPL)}] Boxplots - by [Stage]"), subfolder = Thickness_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 ##### Condition:Stage
@@ -1999,7 +1999,7 @@ Plots:
 make_signif_boxplot(thick_combined_mod_MLPL, xaxis = "Condition", facet = "Stage") |>
   save_png(
     filename = glue("[Combined] - [{get_model_tag(thick_combined_mod_MLPL)}] Boxplots - by [Condition] within [Stage]"), 
-    subfolder = Thickness_target, dpi = 600, width = 10, height = 7
+    subfolder = Thickness_target, dpi = dpi_save_png, width = 10, height = 7
   )
 ```
 
@@ -2007,7 +2007,7 @@ make_signif_boxplot(thick_combined_mod_MLPL, xaxis = "Condition", facet = "Stage
 make_signif_boxplot_inter(thick_combined_mod_MLPL, xaxis = "Condition", facet = "Stage") |>
   save_png(
     filename = glue("[Combined] - [{get_model_tag(thick_combined_mod_MLPL)}] Interaction Boxplots - by [Condition] within [Stage]"), 
-    subfolder = Thickness_target, dpi = 600, width = 10, height = 7
+    subfolder = Thickness_target, dpi = dpi_save_png, width = 10, height = 7
   )
 ```
 
@@ -2200,7 +2200,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3, echo = F}
 # make_signif_boxplot(thick_combined_mod_IGL, xaxis = "Condition") |> 
-#   save_png(filename = glue("[Combined] - [{get_model_tag(thick_combined_mod_IGL)}] Boxplots - by [Condition]"), subfolder = Thickness_target, dpi = 600, width = 5, height = 8)
+#   save_png(filename = glue("[Combined] - [{get_model_tag(thick_combined_mod_IGL)}] Boxplots - by [Condition]"), subfolder = Thickness_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 ##### Stage:
@@ -2235,7 +2235,7 @@ Plot:
 
 ```{r fig.width = 5, fig.height = 8}
 (make_signif_boxplot(thick_combined_mod_IGL, xaxis = "Stage") + scale_color_viridis_d()) |> 
-  save_png(filename = glue("[Combined] - [{get_model_tag(thick_combined_mod_IGL)}] Boxplots - by [Stage]"), subfolder = Thickness_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[Combined] - [{get_model_tag(thick_combined_mod_IGL)}] Boxplots - by [Stage]"), subfolder = Thickness_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 ##### Condition:Stage
@@ -2282,7 +2282,7 @@ Plots:
 make_signif_boxplot(thick_combined_mod_IGL, xaxis = "Condition", facet = "Stage") |>
   save_png(
     filename = glue("[Combined] - [{get_model_tag(thick_combined_mod_IGL)}] Boxplots - by [Condition] within [Stage]"), 
-    subfolder = Thickness_target, dpi = 600, width = 10, height = 7
+    subfolder = Thickness_target, dpi = dpi_save_png, width = 10, height = 7
   )
 ```
 
@@ -2290,6 +2290,6 @@ make_signif_boxplot(thick_combined_mod_IGL, xaxis = "Condition", facet = "Stage"
 make_signif_boxplot_inter(thick_combined_mod_IGL, xaxis = "Condition", facet = "Stage") |>
   save_png(
     filename = glue("[Combined] - [{get_model_tag(thick_combined_mod_IGL)}] Interaction Boxplots - by [Condition] within [Stage]"),
-    subfolder = Thickness_target, dpi = 600, width = 10, height = 7
+    subfolder = Thickness_target, dpi = dpi_save_png, width = 10, height = 7
   )
 ```

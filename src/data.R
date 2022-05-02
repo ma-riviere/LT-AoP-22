@@ -11,7 +11,6 @@ stage_list <- c("P4", "P8", "P12", "P21", "Ad")
 load_mbp <- function(path) {
   return(
     readxl::read_excel(path)
-    |> select(matches("Sample|_Fil|_DD"))
     |> tidyr::separate(Sample, sep = " ", into = c("Mouse", "c", "Slice", "Loc"), remove = T, convert = T)
     |> tidyr::extract(
       Mouse,
@@ -25,7 +24,7 @@ load_mbp <- function(path) {
       Condition = factor(Condition, levels = c("N", "H"), labels = c("N", "IH"))
     )
     |> arrange(Condition, Pup, Slice, Loc)
-    |> select(Sample, Mouse, Condition, N_DD, Length_Fil, Area_Fil, Vol_Fil, Angle_Fil)
+    |> select(Sample, Mouse, Stage, Condition, N_DD, Length_Fil, Area_Fil, Vol_Fil, Angle_Fil)
   )
 }
 
@@ -79,7 +78,7 @@ load_vglut <- function(path) {
       Z = factor(str_to_sentence(Z))
     )
     |> arrange(Condition, Slice, Loc)
-    |> select(Experiment, Sample, Mouse, Condition, Z, N_CC, A_DD, A_DD_per_cell, A_VGLUT_CF, A_VGLUT_MF, Vol_DD, Vol_DD_per_cell, A_ML, Vol_ML, Thick_ML)
+    |> select(Sample, Mouse, Stage, Condition, Z, N_CC, A_DD, A_DD_per_cell, A_VGLUT_CF, A_VGLUT_MF, Vol_DD, Vol_DD_per_cell, A_ML, Vol_ML, Thick_ML)
   )
 }
 
@@ -101,13 +100,13 @@ load_GluD2 <- function(path) {
     |> tidyr::unite("Mouse", c(Bloodline, MouseID, Condition), sep = "", remove = F)
     |> mutate(
       # Areas are already 10e-5
-      A_CL_GLUD2_DD_per_cell = A_CL_GLUD2_DD / N_CC,
+      # A_CL_GLUD2_DD_per_cell = A_CL_GLUD2_DD / N_CC,
       A_DD_per_cell = A_DD / N_CC,
       Condition = factor(Condition, levels = c("N", "H"), labels = c("N", "IH")),
       Z = factor(str_to_sentence(Z))
     )
     |> arrange(Condition, Slice, Loc)
-    |> select(Sample, Mouse, Condition, Z, N_CC, A_GLUD2, Vol_GLUD2, A_DD, A_DD_per_cell)
+    |> select(Sample, Mouse, Stage, Condition, Z, N_CC, A_GLUD2, Vol_GLUD2, A_DD, A_DD_per_cell)
   )
 }
 
@@ -168,7 +167,7 @@ load_BrDU <- function(path) {
       Layer = factor(Layer)
     )
     |> arrange(Layer, Condition, Sample)
-    |> select(Layer, Sample, Mouse, Condition, Well, Dens_BrDU)
+    |> select(Layer, Sample, Stage, Mouse, Condition, Well, Dens_BrDU)
   )
 }
 
@@ -188,7 +187,7 @@ load_Calb_P12 <- function(path) {
       Z = factor(str_to_sentence(Z))
     )
     |> arrange(Condition, Sample, Slice)
-    |> select(Sample, Mouse, Slice, Z, Condition, N_CC, A_PC, Vol_PC, A_PCL, A_ML, A_PC_per_cell, Vol_PC_per_cell)
+    |> select(Sample, Mouse, Stage, Slice, Z, Condition, N_CC, A_PC, Vol_PC, A_PCL, A_ML, A_PC_per_cell, Vol_PC_per_cell)
   )
 }
 
@@ -215,7 +214,7 @@ load_Calb_P21 <- function(path) {
       Z = factor(str_to_sentence(Z))
     )
     |> arrange(Condition, Sample, Slice)
-    |> select(Sample, Mouse, Slice, Z, Condition, N_CC, A_ML, A_PC_per_cell, Vol_PC_per_cell)
+    |> select(Sample, Mouse, Stage, Slice, Z, Condition, N_CC, A_ML, A_PC_per_cell, Vol_PC_per_cell)
   )
 }
 
@@ -264,7 +263,7 @@ load_Casp <- function(stage = NULL) {
           Z = factor(str_to_sentence(Z))
         )
         |> arrange(Condition, Sample)
-        |> select(Sample, Mouse, Condition, Z, matches("_EGL"), matches("_ML_PCL"), matches("_IGL_WM"), matches("_Tot"))
+        |> select(Sample, Mouse, Stage, Condition, Z, matches("_EGL"), matches("_ML_PCL"), matches("_IGL_WM"), matches("_Tot"))
         |> mutate(Stage = factor(str_extract(path, pattern = "P(\\d{1,2})"), levels = stage_list), .before = Sample)
       )
     }
@@ -286,7 +285,7 @@ load_Casp_Act <- function(path) {
       regex = "^(\\w{2})(\\d{1})([hH]+|[nN]+)$",
       convert = T, remove = F
     )
-    |> select(Experiment, Condition, Mouse, Tube, Slope, Prot_Con, Fluo_Norm)
+    |> select(Experiment, Stage, Condition, Mouse, Fluo_Norm)
     |> mutate(
       across(where(is.character), .fns = \(.x) as.factor(.x)),
       Condition = factor(Condition, levels = c("N", "H"), labels = c("N", "IH"))
@@ -324,7 +323,7 @@ load_Weights <- function(path, age = "All") {
       )
       |> droplevels(except = c("Mouse", "Condition"))
       |> arrange(Condition, Mouse)
-      |> select(Mouse, Condition, Stage, Day, Weight)
+      |> select(Mouse, Stage, Condition, Stage, Day, Weight)
     )
   }
 }
@@ -346,7 +345,7 @@ load_behavior_pups <- function(path) {
       
     )
     |> arrange(Condition, Mouse, Stage)
-    |> select(Mouse, Condition, Stage, Day, matches("Time"))
+    |> select(Mouse, Stage, Condition, Stage, Day, matches("Time"))
   )
 }
 
@@ -356,11 +355,10 @@ load_behavior_teens <- function(path) {
     |> tidyr::unite("Mouse", c(Experiment, Mouse, Condition), sep = "", remove = F)
     |> mutate(
       across(c(Mouse, Measure), \(.x) as.factor(.x)),
-      Condition = factor(Condition, levels = c("N", "IH")),
-      Stage = factor(Stage, levels = "P21")
+      Condition = factor(Condition, levels = c("N", "IH"))
     )
-    |> arrange(Condition, Mouse, Stage)
-    |> select(Mouse, Condition, Stage, Weight, Measure, Grip_Strength)
+    |> arrange(Condition, Mouse)
+    |> select(Mouse, Condition, Weight, Measure, Grip_Strength)
   )
 }
 
@@ -373,7 +371,7 @@ load_behavior_adults <- function(path, sheet) {
       Condition = factor(Condition, levels = c("N", "IH"))
     )
     |> arrange(Condition, Mouse)
-    |> select(Mouse, Condition, everything(), -Experiment)
+    |> select(Mouse, Stage, Condition, everything(), -Experiment)
   )
 }
 
@@ -403,7 +401,7 @@ load_Thickness <- function(path, stage = "All") {
         Condition = factor(Condition, levels = c("N", "H"), labels = c("N", "IH"))
       )
       |> arrange(Condition, Mouse)
-      |> select(Sample, Slice, MeasureID, Mouse, Condition, everything(), -Outlier)
+      |> select(Sample, Stage, Slice, MeasureID, Mouse, Condition, everything(), -Outlier)
     )
   }
 }

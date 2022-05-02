@@ -1,5 +1,5 @@
 ```{r include = F, echo = F}
-source("../src/init.R", echo = F)
+source("../src/setup.R", echo = F)
 ```
 
 <!------------------------------------------------------------------------------>
@@ -253,7 +253,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(mbp_mod_Length_Fil, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(mbp_mod_Length_Fil)}] Boxplot - by [Condition]"), subfolder = mbp_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(mbp_mod_Length_Fil)}] Boxplot - by [Condition]"), subfolder = mbp_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 
@@ -455,7 +455,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(mbp_mod_Area_Fil, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(mbp_mod_Area_Fil)}] Boxplot - by [Condition]"), subfolder = mbp_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(mbp_mod_Area_Fil)}] Boxplot - by [Condition]"), subfolder = mbp_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 
@@ -655,6 +655,6 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(mbp_mod_Vol_Fil, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(mbp_mod_Vol_Fil)}] Boxplot - by [Condition]"), subfolder = mbp_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(mbp_mod_Vol_Fil)}] Boxplot - by [Condition]"), subfolder = mbp_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 

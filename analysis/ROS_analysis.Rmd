@@ -1,5 +1,5 @@
 ```{r include = F, echo = F}
-source("../src/init.R", echo = F)
+source("../src/setup.R", echo = F)
 ```
 
 
@@ -252,5 +252,5 @@ Plot:
 
 ```{r fig.width = 5, fig.height = 8}
 make_signif_boxplot(ROS_mod_perc, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(ROS_mod_perc)}] Boxplots - by [Condition]"), subfolder = ROS_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(ROS_mod_perc)}] Boxplots - by [Condition]"), subfolder = ROS_target, dpi = dpi_save_png, width = 5, height = 8)
 ```

@@ -1,5 +1,5 @@
 ```{r include = F, echo = F}
-source("../src/init.R", echo = F)
+source("../src/setup.R", echo = F)
 ```
 
 <!------------------------------------------------------------------------------>
@@ -16,11 +16,11 @@ GluD2_target <- "GluD2"
 
 ### Variables:
 
-GluD2_responses <- c("A_CL_GLUD2_DD_per_cell", "A_DD", "A_DD_per_cell", "A_GLUD2", "Vol_GLUD2")
+GluD2_responses <- c("A_DD", "A_DD_per_cell", "A_GLUD2", "Vol_GLUD2")
 GluD2_predictors <- c("Condition", "Z")
 
-A_GLUD2_name <- "Gluð2-labelled Parallel fiber area  \n in the ML *(10^(-5) μm^(2))*"
-Vol_GLUD2_name  <- "Gluð2-labelled Parallel fiber volume  \n in the ML *(10^(-5) μm^(3))*"
+A_GLUD2_name <- "Gluδ2-labelled Parallel fiber area  \n in the ML *(10^(-5) μm^(2))*"
+Vol_GLUD2_name  <- "Gluδ2-labelled Parallel fiber volume  \n in the ML *(10^(-5) μm^(3))*"
 
 A_DD_name  <- "Purkinje dendrite area *(10^(-4) μm^(2))*"
 A_DD_per_cell_name  <- "Purkinje dendrite area *(10^(-4) μm^(2))*  \n per Purkinje cell"
@@ -282,7 +282,7 @@ Plot:
 
 ```{r fig.width = 4, fig.height = 7}
 make_signif_boxplot(GluD2_mod_A_DD_per_cell, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_DD_per_cell)}] Boxplots - by [Condition]"), subfolder = GluD2_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_DD_per_cell)}] Boxplots - by [Condition]"), subfolder = GluD2_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 **Z:**
@@ -317,7 +317,7 @@ Plot:
 
 ```{r fig.width = 4, fig.height = 7}
 make_signif_boxplot(GluD2_mod_A_DD_per_cell, xaxis = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_DD_per_cell)}] Boxplots - by [Z]"), subfolder = GluD2_target, dpi = 600, width = 4.5, height = 7)
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_DD_per_cell)}] Boxplots - by [Z]"), subfolder = GluD2_target, dpi = dpi_save_png, width = 4.5, height = 7)
 ```
 
 **Condition:Z**
@@ -362,12 +362,12 @@ Plots:
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot(GluD2_mod_A_DD_per_cell, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_DD_per_cell)}] Boxplots - by [Condition] within [Z]"), subfolder = GluD2_target, dpi = 600, width = 10, height = 7)
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_DD_per_cell)}] Boxplots - by [Condition] within [Z]"), subfolder = GluD2_target, dpi = dpi_save_png, width = 10, height = 7)
 ```
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot_inter(GluD2_mod_A_DD_per_cell, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_DD_per_cell)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = GluD2_target, dpi = 600, width = 10, height = 7)
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_DD_per_cell)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = GluD2_target, dpi = dpi_save_png, width = 10, height = 7)
 ```
 
 
@@ -595,7 +595,7 @@ Plot:
 
 ```{r fig.width = 4, fig.height = 7}
 make_signif_boxplot(GluD2_mod_A_GLUD2, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_GLUD2)}] Boxplots - by [Condition]"), subfolder = GluD2_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_GLUD2)}] Boxplots - by [Condition]"), subfolder = GluD2_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 **Z:**
@@ -630,7 +630,7 @@ Plot:
 
 ```{r fig.width = 4, fig.height = 7}
 make_signif_boxplot(GluD2_mod_A_GLUD2, xaxis = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_GLUD2)}] Boxplots - by [Z]"), subfolder = GluD2_target, dpi = 600, width = 4.5, height = 7)
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_GLUD2)}] Boxplots - by [Z]"), subfolder = GluD2_target, dpi = dpi_save_png, width = 4.5, height = 7)
 ```
 
 **Condition:Z**
@@ -675,12 +675,12 @@ Plots:
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot(GluD2_mod_A_GLUD2, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_GLUD2)}] Boxplots - by [Condition] within [Z]"), subfolder = GluD2_target, dpi = 600, width = 10, height = 7)
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_GLUD2)}] Boxplots - by [Condition] within [Z]"), subfolder = GluD2_target, dpi = dpi_save_png, width = 10, height = 7)
 ```
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot_inter(GluD2_mod_A_GLUD2, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_GLUD2)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = GluD2_target, dpi = 600, width = 10, height = 7)
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_A_GLUD2)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = GluD2_target, dpi = dpi_save_png, width = 10, height = 7)
 ```
 
 
@@ -906,7 +906,7 @@ Plot:
 
 ```{r fig.width = 4, fig.height = 7}
 make_signif_boxplot(GluD2_mod_Vol_GLUD2, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(GluD2_mod_Vol_GLUD2)}] Boxplots - by [Condition]"), subfolder = GluD2_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_Vol_GLUD2)}] Boxplots - by [Condition]"), subfolder = GluD2_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 **Z:**
@@ -941,7 +941,7 @@ Plot:
 
 ```{r fig.width = 4, fig.height = 7}
 make_signif_boxplot(GluD2_mod_Vol_GLUD2, xaxis = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(GluD2_mod_Vol_GLUD2)}] Boxplots - by [Z]"), subfolder = GluD2_target, dpi = 600, width = 4.5, height = 7)
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_Vol_GLUD2)}] Boxplots - by [Z]"), subfolder = GluD2_target, dpi = dpi_save_png, width = 4.5, height = 7)
 ```
 
 **Condition:Z**
@@ -986,11 +986,11 @@ Plots:
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot(GluD2_mod_Vol_GLUD2, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(GluD2_mod_Vol_GLUD2)}] Boxplots - by [Condition] within [Z]"), subfolder = GluD2_target, dpi = 600, width = 10, height = 7)
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_Vol_GLUD2)}] Boxplots - by [Condition] within [Z]"), subfolder = GluD2_target, dpi = dpi_save_png, width = 10, height = 7)
 ```
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot_inter(GluD2_mod_Vol_GLUD2, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(GluD2_mod_Vol_GLUD2)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = GluD2_target, dpi = 600, width = 10, height = 7)
+  save_png(filename = glue("[{get_model_tag(GluD2_mod_Vol_GLUD2)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = GluD2_target, dpi = dpi_save_png, width = 10, height = 7)
 ```
 

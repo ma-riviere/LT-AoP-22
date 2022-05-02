@@ -1,5 +1,5 @@
 ```{r include = F, echo = F}
-source("../src/init.R", echo = F)
+source("../src/setup.R", echo = F)
 ```
 
 <!------------------------------------------------------------------------------>
@@ -69,8 +69,8 @@ hist_plot(weight_data_pups_teens, var = "Weight", facet = "Condition")
 
 **Stage:Condition:**
 
-```{r fig.width = 14, fig.height = 3}
-temporal_dist_plot(weight_data_pups_teens, "Weight")
+```{r fig.width = 12, fig.height = 8}
+hist_plot(weight_data_pups_teens, var = "Weight", facet = "Condition", facet2 = "Stage")
 ```
 
 **Global trajectory:**
@@ -182,7 +182,7 @@ car::Anova(mod_weight_pups_teens, type = 3)
 Marginal means:
 
 ```{r}
-(mod_weight_pups_teens_emm <- inner_join(
+inner_join(
   emmeans::emmeans(
     object = mod_weight_pups_teens, 
     specs = ~ Stage | Condition, 
@@ -196,34 +196,33 @@ Marginal means:
     dvs = insight::find_response(mod_weight_pups_teens), 
     between = c("Condition", "Stage")
   ) |> select(Stage, Condition, Observed = Mean)
-) |> select(Stage, Condition, Observed, Modeled, everything()))
+) |> select(Stage, Condition, Observed, Modeled, everything())
 ```
 
 Contrasts:
 
 ```{r}
-(mod_weight_pups_teens_contrasts <- emmeans::emmeans(
+emmeans::emmeans(
   object = mod_weight_pups_teens, 
   specs = ~ Condition | Stage, 
   type = "response",
   adjust = "none"
-) 
-|> emmeans::contrast(method = "pairwise", type = "response", infer = TRUE) 
-|> data.frame()
-|> select(contrast, Stage, matches("estimate|risk|odds|^ratio|^difference"), matches("CL$"), p.value)
-)
+) |> 
+  emmeans::contrast(method = "pairwise", type = "response", infer = TRUE) |> 
+  data.frame() |> 
+  select(contrast, Stage, matches("estimate|risk|odds|^ratio|^difference"), matches("CL$"), p.value)
 ```
 
 Plots:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(mod_weight_pups_teens, xaxis = "Condition") |> 
-  save_png(filename = glue("[Pups & Teens] - [GLM (Gamma) + AR1] Boxplots - by [Condition]"), subfolder = weight_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[Pups & Teens] - [{get_model_tag(mod_weight_pups_teens)}] Boxplots - by [Condition]"), subfolder = weight_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 ```{r fig.width = 6}
-modeled_temporal_plot(mod_weight_pups_teens, mod_weight_pups_teens_emm, mod_weight_pups_teens_contrasts, xlims = paste0("P", 2:21), zero_hline = FALSE) |> 
-  save_png(filename = glue("[Pups & Teens] - [GLM (Gamma) + AR1] Temporal evolution - by [Condition]"), subfolder = weight_target, dpi = 600, width = 12, height = 8)
+modeled_temporal_plot(mod_weight_pups_teens, xlims = paste0("P", 2:21)) |> 
+  save_png(filename = glue("[Pups & Teens] - [{get_model_tag(mod_weight_pups_teens)}] Temporal evolution - by [Condition]"), subfolder = weight_target, dpi = dpi_save_png, width = 12, height = 8)
 ```
 
 
@@ -275,8 +274,8 @@ hist_plot(weight_data_adults, var = "Weight", facet = "Condition")
 
 **Stage:Condition:**
 
-```{r fig.width = 6, fig.height = 3}
-temporal_dist_plot(weight_data_adults, "Weight")
+```{r fig.width = 8, fig.height = 6}
+hist_plot(weight_data_adults, var = "Weight", facet = "Condition", facet2 = "Stage")
 ```
 
 **Global trajectory:**
@@ -389,7 +388,7 @@ LRT(weight_mod_adults, pred = "Condition")
 Marginal means:
 
 ```{r}
-(weight_mod_adults_emm <- inner_join(
+inner_join(
   emmeans::emmeans(
     object = weight_mod_adults, 
     specs = ~ Stage | Condition, 
@@ -403,33 +402,32 @@ Marginal means:
     dvs = insight::find_response(weight_mod_adults), 
     between = c("Condition", "Stage")
   ) |> select(Stage, Condition, Observed = Mean)
-) |> select(Stage, Condition, Observed, Modeled, everything()))
+) |> select(Stage, Condition, Observed, Modeled, everything())
 ```
 
 Contrasts:
 
 ```{r}
-(weight_mod_adults_contrasts <- emmeans::emmeans(
+emmeans::emmeans(
   object = weight_mod_adults, 
   specs = ~ Condition | Stage, 
   type = "response",
   adjust = "none"
-) 
-|> emmeans::contrast(method = "pairwise", type = "response", infer = TRUE) 
-|> data.frame()
-|> select(contrast, Stage, matches("estimate|risk|odds|^ratio|^difference"), matches("CL$"), p.value)
-)
+) |> 
+  emmeans::contrast(method = "pairwise", type = "response", infer = TRUE) |> 
+  data.frame() |> 
+  select(contrast, Stage, matches("estimate|risk|odds|^ratio|^difference"), matches("CL$"), p.value)
 ```
 
 Plots:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(weight_mod_adults, xaxis = "Condition") |> 
-  save_png(filename = glue("[Adults] - [GLM (Gamma) + AR1] Boxplots - by [Condition]"), subfolder = weight_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[Adults] - [{get_model_tag(weight_mod_adults)}] Boxplots - by [Condition]"), subfolder = weight_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 ```{r fig.width = 6}
-modeled_temporal_plot(weight_mod_adults, weight_mod_adults_emm, weight_mod_adults_contrasts, zero_hline = FALSE) |> 
-  save_png(filename = glue("[Adults] - [GLM (Gamma) + AR1] Temporal evolution - by [Condition]"), subfolder = weight_target, dpi = 600, width = 12, height = 8)
+modeled_temporal_plot(weight_mod_adults) |> 
+  save_png(filename = glue("[Adults] - [{get_model_tag(weight_mod_adults)}] Temporal evolution - by [Condition]"), subfolder = weight_target, dpi = dpi_save_png, width = 12, height = 8)
 ```
 

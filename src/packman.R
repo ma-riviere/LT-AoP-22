@@ -3,7 +3,6 @@
 #========================#
 
 options(
-  repos = project_repos,
   pkgType = ifelse(Sys.info()[["sysname"]] == "Windows", "both", "source"),
   Ncpus = max(1, parallel::detectCores(logical = TRUE) - 1),
   verbose = FALSE
@@ -18,8 +17,10 @@ Sys.setenv(MAKEFLAGS = paste0("-j", getOption("Ncpus")))
 init_project_packages <- function() {
   log.title("[PACKAGES] Restoring project packages ...")
   
-  renv::restore(prompt = FALSE, repos = project_repos)
-  load_packages(c(base_pkgs, project_pkgs))
+  renv::restore(prompt = FALSE)
+  
+  # pkgs <- names(jsonlite::fromJSON(here::here("renv.lock"))$Packages)
+  load_packages(project_pkgs)
 }
 
 #------------------------#

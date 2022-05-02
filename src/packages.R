@@ -2,14 +2,18 @@
 #### Project packages ####
 #========================#
 
-project_repos <- c(
-  # EasyStats = "https://easystats.r-universe.dev",
-  CRAN = "https://cloud.r-project.org/"
-)
-
-base_pkgs <- c("renv", "here", "config", "rlang", "fs", "knitr", "rmarkdown", "crayon", "usethis")
-
 project_pkgs <- c(
+  ### Base packages
+  "renv", 
+  "here", 
+  "config", 
+  "rlang", 
+  "fs", 
+  "knitr", 
+  "rmarkdown", 
+  "crayon", 
+  "usethis",
+  
   ### Data wrangling
   "tibble",
   "janitor",
@@ -46,6 +50,8 @@ project_pkgs <- c(
   "GGally",
 
   ### Reporting
+  "gt",
+  "quarto",
   
   ### Misc
   "glue", 

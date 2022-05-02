@@ -9,16 +9,16 @@ distribution_summary <- function(data, dvs, between = "Condition") {
     pivot_longer(all_of(dvs), names_to = "DV", values_to = "Value") |> 
     group_by(across(any_of(between)))  |> 
     group_map( 
-      \(.x, .y) parameters::describe_distribution(.x |> group_by(DV)) |>
+      \(d, g) datawizard::describe_distribution(group_by(d, DV), verbose = FALSE) |>
         mutate(
           Variance = SD^2,
-          CoV = SD / Mean,
+          CoV = ifelse(SD / Mean > 1e4, NA_real_, SD / Mean),
           Variable = str_remove(.group, fixed("DV="))
         ) |> 
-        add_column(.y, .after = 1) |> 
-        select("Variable", all_of(between), "Mean", "SD", "Variance", "CoV", "IQR", "Min", "Max", "Skewness", "Kurtosis", "n", "n_Missing")
+        add_column(g, .after = 1) |> 
+        select("Variable", all_of(between), "Mean", "SD", "Variance", "CoV", "IQR", "Min", "Max", "Skewness", "Kurtosis", "n")
     ) |> 
-    purrr::reduce(full_join, by = c("Variable", all_of(between), "Mean", "SD", "Variance", "CoV", "IQR", "Min", "Max", "Skewness", "Kurtosis", "n", "n_Missing")) |> 
+    purrr::reduce(full_join, by = c("Variable", all_of(between), "Mean", "SD", "Variance", "CoV", "IQR", "Min", "Max", "Skewness", "Kurtosis", "n")) |> 
     arrange(Variable, across(any_of(between)))
 }
 
@@ -63,7 +63,7 @@ find_coefficient_count <- function(data, predictors, interactions = NULL) {
   return(coef_count + 1) # Add one for the intercept
 }
 
-LRT <- function(mod, pred = "Condition", print_eq = FALSE) {
+LRT <- function(mod, pred = "Condition", verbose = FALSE) {
   data <- insight::get_data(mod)
   resp <- insight::find_response(mod)
   link <- insight::link_function(mod)
@@ -76,16 +76,18 @@ LRT <- function(mod, pred = "Condition", print_eq = FALSE) {
   reduced_formula <- glue("{resp} ~ . -{paste0(stringr::str_subset(preds, pred))}")
   if (!is.null(inters)) reduced_formula <- str_c(reduced_formula, glue("-{paste0(stringr::str_subset(inters, pred))}"))
   
-  if (toupper(insight::find_algorithm(mod)$algorithm) == "REML") 
+  if (verbose && toupper(insight::find_algorithm(mod)$algorithm) == "REML") 
     cat(crayon::yellow(glue::glue("\n{crayon::bold('\n[LRT]')} Full model was fit with REML --> Refitting with ML.\n")))
   
   mod_full <- tryCatch(
     update(mod, REML = FALSE),
     
     warning = \(w) {
-      cat(crayon::red(glue::glue("{crayon::bold('\n[LRT]')} Model convergence warning (full model):\n\n")))
-      print(w)
-      cat(crayon::yellow(glue::glue("{crayon::bold('[LRT]')} Retrying with better starting values ...\n\n")))
+      if (verbose) {
+        cat(crayon::red(glue::glue("{crayon::bold('\n[LRT]')} Model convergence warning (full model):\n\n")))
+        print(w)
+        cat(crayon::yellow(glue::glue("{crayon::bold('[LRT]')} Retrying with better starting values ...\n\n")))
+      }
       
       beta_start_full <- c(link(mean(insight::get_response(mod))), rep(0, find_coefficient_count(data, preds, inters) - 1))
       
@@ -102,9 +104,11 @@ LRT <- function(mod, pred = "Condition", print_eq = FALSE) {
       )
     },
     error = \(e) {
-      cat(crayon::red(glue::glue("{crayon::bold('\n[LRT]')} Model convergence error (full model):\n\n")))
-      print(e)
-      cat(crayon::yellow(glue::glue("{crayon::bold('[LRT]')} Retrying with better starting values ...\n\n")))
+      if (verbose) {
+        cat(crayon::red(glue::glue("{crayon::bold('\n[LRT]')} Model convergence error (full model):\n\n")))
+        print(e)
+        cat(crayon::yellow(glue::glue("{crayon::bold('[LRT]')} Retrying with better starting values ...\n\n")))
+      }
       
       beta_start_full <- c(link(mean(insight::get_response(mod))), rep(0, find_coefficient_count(data, preds, inters) - 1))
       
@@ -126,9 +130,11 @@ LRT <- function(mod, pred = "Condition", print_eq = FALSE) {
     update(mod, formula. = reduced_formula, REML = FALSE, start = NULL), 
     
     warning = \(w) {
-      cat(crayon::red(glue::glue("{crayon::bold('\n[LRT]')} Model convergence warning (reduced model):\n\n")))
-      print(w)
-      cat(crayon::yellow(glue::glue("{crayon::bold('[LRT]')} Retrying with better starting values ...\n\n")))
+      if (verbose) {
+        cat(crayon::red(glue::glue("{crayon::bold('\n[LRT]')} Model convergence warning (reduced model):\n\n")))
+        print(w)
+        cat(crayon::yellow(glue::glue("{crayon::bold('[LRT]')} Retrying with better starting values ...\n\n")))
+      }
       
       beta_start_reduced <- c(link(mean(insight::get_response(mod))), rep(0, find_coefficient_count(data, preds_reduced, inters_reduced) - 1))
       
@@ -145,9 +151,11 @@ LRT <- function(mod, pred = "Condition", print_eq = FALSE) {
       )
     },
     error = \(e) {
-      cat(crayon::red(glue::glue("{crayon::bold('\n[LRT]')} Model convergence error (reduced model):\n\n")))
-      print(e)
-      cat(crayon::yellow(glue::glue("{crayon::bold('[LRT]')} Retrying with better starting values ...\n\n")))
+      if (verbose) {
+        cat(crayon::red(glue::glue("{crayon::bold('\n[LRT]')} Model convergence error (reduced model):\n\n")))
+        print(e)
+        cat(crayon::yellow(glue::glue("{crayon::bold('[LRT]')} Retrying with better starting values ...\n\n")))
+      }
       
       beta_start_reduced <- c(link(mean(insight::get_response(mod))), rep(0, find_coefficient_count(data, preds_reduced, inters_reduced) - 1))
       
@@ -170,7 +178,7 @@ LRT <- function(mod, pred = "Condition", print_eq = FALSE) {
 
   res <- stats::anova(mod_full, mod_reduced, test = "LRT") |> as.data.frame() |> rownames_to_column("Model") |> janitor::clean_names()
   
-  if (print_eq) {
+  if (verbose) {
     cat(crayon::blue(glue::glue("{crayon::bold('\n[LRT]')} Full formula: {formula_full}\n")))
     cat(crayon::blue(glue::glue("{crayon::bold('\n[LRT]')} Reduced formula: {formula_reduced}\n")))
     

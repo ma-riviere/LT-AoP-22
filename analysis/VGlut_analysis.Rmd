@@ -1,5 +1,5 @@
 ```{r include = F, echo = F}
-source("../src/init.R", echo = F)
+source("../src/setup.R", echo = F)
 ```
 
 <!------------------------------------------------------------------------------>
@@ -14,11 +14,11 @@ vglut_target <- "VGlut"
 
 # --------------------------------
 
-(vglut_data <- load_vglut(config$data$vglut_path) |> filter(Experiment == "A"))
+(vglut_data <- load_vglut(config$data$vglut_path))
 
 ### Variables:
 
-vglut_responses <- c("A_CL_VGLUT_DD", "A_VGLUT_CF", "A_VGLUT_MF", "N_CC", "A_DD", "A_DD_per_cell", "Vol_DD", "Vol_DD_per_cell","A_ML", "Vol_ML", "Thick_ML")
+vglut_responses <- c("A_VGLUT_MF", "A_VGLUT_CF", "N_CC", "A_DD", "A_DD_per_cell", "Vol_DD", "Vol_DD_per_cell","A_ML", "Vol_ML", "Thick_ML")
 vglut_predictors <- c("Condition", "Z", "Mouse")
 
 A_VGLUT_MF_name <- "Vglut2-labelled Mossy fiber area  \n in the IGL *(10^-4 μm^(2))*"
@@ -51,7 +51,7 @@ vglut_data %>% filter_all(any_vars(is.na(.)))
 ***
 
 ```{r fig.width = 8}
-corr_matrix_plot(vglut_data, vars = c(vglut_responses, vglut_predictors))
+corr_matrix_plot(vglut_data |> drop_na(N_CC), vars = c(vglut_responses, vglut_predictors))
 ```
 
 ```{r fig.width = 10}
@@ -284,7 +284,7 @@ Plot:
 
 ```{r fig.width = 4, fig.height = 7}
 make_signif_boxplot(vglut_mod_A_VGLUT_MF, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_MF)}] Boxplots - by [Condition]"), subfolder = vglut_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_MF)}] Boxplots - by [Condition]"), subfolder = vglut_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 **Z:**
@@ -319,7 +319,7 @@ Plot:
 
 ```{r fig.width = 4, fig.height = 7}
 make_signif_boxplot(vglut_mod_A_VGLUT_MF, xaxis = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_MF)}] Boxplots - by [Z]"), subfolder = vglut_target, dpi = 600, width = 4.5, height = 7)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_MF)}] Boxplots - by [Z]"), subfolder = vglut_target, dpi = dpi_save_png, width = 4.5, height = 7)
 ```
 
 **Condition:Z**
@@ -364,12 +364,12 @@ Plots:
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot(vglut_mod_A_VGLUT_MF, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_MF)}] Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_MF)}] Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = dpi_save_png, width = 10, height = 7)
 ```
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot_inter(vglut_mod_A_VGLUT_MF, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_MF)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_MF)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = dpi_save_png, width = 10, height = 7)
 ```
 
 
@@ -595,7 +595,7 @@ Plot:
 
 ```{r fig.width = 4, fig.height = 7}
 make_signif_boxplot(vglut_mod_A_VGLUT_CF, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_CF)}] Boxplots - by [Condition]"), subfolder = vglut_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_CF)}] Boxplots - by [Condition]"), subfolder = vglut_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 **Z:**
@@ -630,7 +630,7 @@ Plot:
 
 ```{r fig.width = 4, fig.height = 7}
 make_signif_boxplot(vglut_mod_A_VGLUT_CF, xaxis = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_CF)}] Boxplots - by [Z]"), subfolder = vglut_target, dpi = 600, width = 4.5, height = 7)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_CF)}] Boxplots - by [Z]"), subfolder = vglut_target, dpi = dpi_save_png, width = 4.5, height = 7)
 ```
 
 **Condition:Z**
@@ -675,12 +675,12 @@ Plots:
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot(vglut_mod_A_VGLUT_CF, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_CF)}] Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_CF)}] Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = dpi_save_png, width = 10, height = 7)
 ```
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot_inter(vglut_mod_A_VGLUT_CF, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_CF)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_VGLUT_CF)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = dpi_save_png, width = 10, height = 7)
 ```
 
 
@@ -909,7 +909,7 @@ Plot:
 
 ```{r fig.width = 4, fig.height = 7}
 make_signif_boxplot(vglut_mod_A_DD_per_cell, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_A_DD_per_cell)}] Boxplots - by [Condition]"), subfolder = vglut_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_DD_per_cell)}] Boxplots - by [Condition]"), subfolder = vglut_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 **Z:**
@@ -944,7 +944,7 @@ Plot:
 
 ```{r fig.width = 4, fig.height = 7}
 make_signif_boxplot(vglut_mod_A_DD_per_cell, xaxis = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_A_DD_per_cell)}] Boxplots - by [Z]"), subfolder = vglut_target, dpi = 600, width = 4.5, height = 7)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_DD_per_cell)}] Boxplots - by [Z]"), subfolder = vglut_target, dpi = dpi_save_png, width = 4.5, height = 7)
 ```
 
 **Condition:Z**
@@ -989,12 +989,12 @@ Plots:
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot(vglut_mod_A_DD_per_cell, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_A_DD_per_cell)}] Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_DD_per_cell)}] Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = dpi_save_png, width = 10, height = 7)
 ```
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot_inter(vglut_mod_A_DD_per_cell, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_A_DD_per_cell)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_DD_per_cell)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = dpi_save_png, width = 10, height = 7)
 ```
 
 
@@ -1224,7 +1224,7 @@ Plot:
 
 ```{r fig.width = 4, fig.height = 7}
 make_signif_boxplot(vglut_mod_Vol_DD_per_cell, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_Vol_DD_per_cell)}] Boxplots - by [Condition]"), subfolder = vglut_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_Vol_DD_per_cell)}] Boxplots - by [Condition]"), subfolder = vglut_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 **Z:**
@@ -1259,7 +1259,7 @@ Plot:
 
 ```{r fig.width = 4, fig.height = 7}
 make_signif_boxplot(vglut_mod_Vol_DD_per_cell, xaxis = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_Vol_DD_per_cell)}] Boxplots - by [Z]"), subfolder = vglut_target, dpi = 600, width = 4.5, height = 7)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_Vol_DD_per_cell)}] Boxplots - by [Z]"), subfolder = vglut_target, dpi = dpi_save_png, width = 4.5, height = 7)
 ```
 
 **Condition:Z**
@@ -1304,12 +1304,12 @@ Plots:
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot(vglut_mod_Vol_DD_per_cell, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_Vol_DD_per_cell)}] Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 8)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_Vol_DD_per_cell)}] Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = dpi_save_png, width = 10, height = 8)
 ```
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot_inter(vglut_mod_Vol_DD_per_cell, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_Vol_DD_per_cell)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_Vol_DD_per_cell)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = dpi_save_png, width = 10, height = 7)
 ```
 
 
@@ -1537,7 +1537,7 @@ Plot:
 
 ```{r fig.width = 4, fig.height = 7}
 make_signif_boxplot(vglut_mod_A_ML, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_A_ML)}] Boxplots - by [Condition]"), subfolder = vglut_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_ML)}] Boxplots - by [Condition]"), subfolder = vglut_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 **Z:**
@@ -1572,7 +1572,7 @@ Plot:
 
 ```{r fig.width = 4, fig.height = 7}
 make_signif_boxplot(vglut_mod_A_ML, xaxis = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_A_ML)}] Boxplots - by [Z]"), subfolder = vglut_target, dpi = 600, width = 4.5, height = 7)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_ML)}] Boxplots - by [Z]"), subfolder = vglut_target, dpi = dpi_save_png, width = 4.5, height = 7)
 ```
 
 **Condition:Z**
@@ -1617,12 +1617,12 @@ Plots:
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot(vglut_mod_A_ML, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_A_ML)}] Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_ML)}] Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = dpi_save_png, width = 10, height = 7)
 ```
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot_inter(vglut_mod_A_ML, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_A_ML)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_A_ML)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = dpi_save_png, width = 10, height = 7)
 ```
 
 
@@ -1850,7 +1850,7 @@ Plot:
 
 ```{r fig.width = 4, fig.height = 7}
 make_signif_boxplot(vglut_mod_Thick_ML, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_Thick_ML)}] Boxplots - by [Condition]"), subfolder = vglut_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_Thick_ML)}] Boxplots - by [Condition]"), subfolder = vglut_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 **Z:**
@@ -1885,7 +1885,7 @@ Plot:
 
 ```{r fig.width = 4, fig.height = 7}
 make_signif_boxplot(vglut_mod_Thick_ML, xaxis = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_Thick_ML)}] Boxplots - by [Z]"), subfolder = vglut_target, dpi = 600, width = 4.5, height = 7)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_Thick_ML)}] Boxplots - by [Z]"), subfolder = vglut_target, dpi = dpi_save_png, width = 4.5, height = 7)
 ```
 
 **Condition:Z**
@@ -1930,12 +1930,12 @@ Plots:
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot(vglut_mod_Thick_ML, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_Thick_ML)}] Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_Thick_ML)}] Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = dpi_save_png, width = 10, height = 7)
 ```
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot_inter(vglut_mod_Thick_ML, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_Thick_ML)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_Thick_ML)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = dpi_save_png, width = 10, height = 7)
 ```
 
 
@@ -2012,13 +2012,12 @@ parameters(vglut_mod_N_CC_agg$full_model, effects = "fixed", ci_method = "wald",
 <!------------------------------------------------------------------------------>
 ### GLMM:
 
-
 **Negative Binomial:**
 
 ```{r}
 vglut_mod_N_CC_nb1 <- glmmTMB::glmmTMB(
   N_CC ~ Condition * Z + (1 | Mouse),
-  family = nbinom1("log"),
+  family = nbinom2("log"),
   data = vglut_data,
   REML = T,
   control = glmmTMBControl(optimizer = optim, optArgs = list(method = "BFGS"))
@@ -2183,7 +2182,7 @@ Plot:
 
 ```{r fig.width = 4, fig.height = 7}
 make_signif_boxplot(vglut_mod_N_CC, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_N_CC)}] Boxplots - by [Condition]"), subfolder = vglut_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_N_CC)}] Boxplots - by [Condition]"), subfolder = vglut_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 **Z:**
@@ -2218,7 +2217,7 @@ Plot:
 
 ```{r fig.width = 4, fig.height = 7}
 make_signif_boxplot(vglut_mod_N_CC, xaxis = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_N_CC)}] Boxplots - by [Z]"), subfolder = vglut_target, dpi = 600, width = 4.5, height = 7)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_N_CC)}] Boxplots - by [Z]"), subfolder = vglut_target, dpi = dpi_save_png, width = 4.5, height = 7)
 ```
 
 **Condition:Z**
@@ -2263,11 +2262,11 @@ Plots:
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot(vglut_mod_N_CC, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_N_CC)}] Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_N_CC)}] Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = dpi_save_png, width = 10, height = 7)
 ```
 
 ```{r fig.width = 6, fig.height = 5}
 make_signif_boxplot_inter(vglut_mod_N_CC, xaxis = "Condition", facet = "Z") |> 
-  save_png(filename = glue("[{get_model_tag(vglut_mod_N_CC)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = 600, width = 10, height = 7)
+  save_png(filename = glue("[{get_model_tag(vglut_mod_N_CC)}] Interaction Boxplots - by [Condition] within [Z]"), subfolder = vglut_target, dpi = dpi_save_png, width = 10, height = 7)
 ```
 

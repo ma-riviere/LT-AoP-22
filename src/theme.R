@@ -19,19 +19,19 @@ custom_light <- invis_custom +
   ggplot2::theme(
     panel.border = ggplot2:: element_rect(fill = NA, colour = "black"),
     ## Titles
-    plot.title = ggtext::element_markdown(size = 12, face = "bold"),
-    plot.subtitle = ggtext::element_markdown(size = 11, face = "italic"),
+    plot.title = ggtext::element_markdown(size = 20, face = "bold"),
+    plot.subtitle = ggtext::element_markdown(size = 15, face = "italic"),
     ## Legend
     legend.title = ggplot2::element_text(face = "bold"),
     ## Facets
     strip.background = ggplot2::element_rect(fill = "#C6C6C6"),
-    strip.text = ggplot2::element_text(size = 10, face = "bold"),
+    strip.text = ggplot2::element_text(size = 16, face = "bold"),
     ## Axes
-    axis.title.x = ggtext::element_markdown(size = 20, face = "bold", hjust = 0.5),
-    axis.title.y = ggtext::element_markdown(size = 20, face = "bold", hjust = 0.5),
+    axis.title.x = ggtext::element_markdown(size = 16, face = "bold", hjust = 0.5),
+    axis.title.y = ggtext::element_markdown(size = 16, face = "bold", hjust = 0.5),
     axis.text = ggplot2::element_text(color = "black"),
-    axis.text.x = ggplot2::element_text(size = 18, face = "bold"),
-    axis.text.y = ggplot2::element_text(size = 15, face = "bold"),
+    axis.text.x = ggplot2::element_text(size = 13),
+    axis.text.y = ggplot2::element_text(size = 13),
     text = ggplot2::element_text(color = "black", family = "")
   )
 

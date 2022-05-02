@@ -1,5 +1,5 @@
 ```{r include = F, echo = F}
-source("../src/init.R", echo = F)
+source("../src/setup.R", echo = F)
 ```
 
 <!------------------------------------------------------------------------------>
@@ -228,6 +228,6 @@ Plot:
 
 ```{r fig.width = 5, fig.height = 8}
 make_signif_boxplot(Casp_Act_mod_norm, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(Casp_Act_mod_norm)}] - [Normalized] Boxplots - by [Condition]"), subfolder = Casp_Act_target, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(Casp_Act_mod_norm)}] - [Normalized] Boxplots - by [Condition]"), subfolder = Casp_Act_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
 

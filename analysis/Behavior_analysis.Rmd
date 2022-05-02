@@ -1,5 +1,5 @@
 ```{r include = F, echo = F}
-source("../src/init.R", echo = F)
+source("../src/setup.R", echo = F)
 ```
 
 <!------------------------------------------------------------------------------>
@@ -21,6 +21,7 @@ responses_pups <- c("Time_RR", "Time_GR")
 (behavior_pups_data <- load_behavior_pups(config$data$behavior_pups_path) |> 
   mutate(
     Day = center(Day),
+    Time_RR_zi = ifelse(Time_RR == 60, 0, Time_RR),
     Time_GR_pos = ifelse(Time_GR == 0, 0.1, Time_GR), # For Gamma
     Time_GR_beta = ifelse(Time_GR == 0, 0.01, Time_GR / 60.01) # For Beta
   )
@@ -53,7 +54,7 @@ responses_adults_Morris <- c("Path_Efficiency", "Latency_Plat", "Freezing")
 
 (behavior_adults_Morris_data <- load_behavior_adults(config$data$behavior_adults_path, sheet = "Behavior") |> 
   mutate(
-    Session = factor(Session),
+    Stage = factor(Stage),
     across(responses_adults_Morris, \(col) as.numeric(col)),
     across(c("Freezing"), \(.x) .x = ifelse(.x == 0, 0.01, .x)) # To be able to fit the Gamma
   )
@@ -64,7 +65,7 @@ Latency_Plat_name <- "Latency to Platform *(s)*"
 Freezing_name <- "Freezing *(s)*"
 
 contrasts(behavior_adults_Morris_data$Condition) <- contr.sum
-contrasts(behavior_adults_Morris_data$Session) <- contr.sum
+contrasts(behavior_adults_Morris_data$Stage) <- contr.sum
 
 behavior_adults_Morris_data_agg <- behavior_adults_Morris_data |>
   group_by(Mouse, Condition) |>
@@ -178,8 +179,8 @@ purrr::map(
 
 **Stage:Condition:**
 
-```{r fig.width = 6, fig.height = 3}
-temporal_dist_plot(behavior_pups_data, "Time_GR")
+```{r fig.width = 6, fig.height = 8}
+hist_plot(behavior_pups_data, var = "Time_GR", facet = "Condition", facet2 = "Stage")
 ```
 
 Temporal evolution of Time_GR:
@@ -320,7 +321,7 @@ car::Anova(behavior_pups_mod_GR, type = 3)
 Marginal Means:
 
 ```{r}
-(behavior_pups_mod_GR_emm <- inner_join(
+inner_join(
   emmeans::emmeans(
     object = behavior_pups_mod_GR, 
     specs = ~ Stage | Condition,
@@ -335,36 +336,33 @@ Marginal Means:
     dvs = insight::find_response(behavior_pups_mod_GR), 
     between = c("Condition", "Stage")
   ) |> select(Stage, Condition, Observed = Mean)
-) |> select(Stage, Condition, Observed, Modeled, everything()))
+) |> select(Stage, Condition, Observed, Modeled, everything())
 ```
 
 Contrasts:
 
 ```{r}
-(behavior_pups_mod_GR_contrasts <- emmeans::emmeans(
+emmeans::emmeans(
   object = behavior_pups_mod_GR, 
   specs = ~ Condition | Stage,
   type = "response",
   adjust = "none"
-) 
-|> emmeans::contrast(method = "pairwise", type = "response", infer = TRUE)
-|> data.frame()
-|> select(contrast, Stage, matches("estimate|risk|odds|^ratio|^difference"), matches("CL$"), p.value)
-)
+) |> 
+  emmeans::contrast(method = "pairwise", type = "response", infer = TRUE) |> 
+  data.frame() |> 
+  select(contrast, Stage, matches("estimate|risk|odds|^ratio|^difference"), matches("CL$"), p.value)
 ```
 
 Plot:
 
 ```{r fig.width = 2, fig.height = 3}
-make_signif_boxplot(behavior_pups_mod_GR, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(behavior_pups_mod_GR)}] Boxplots - by [Condition]"), subfolder = behavior_target_pups, dpi = 600, width = 5, height = 8)
+make_signif_boxplot(behavior_pups_mod_GR, xaxis = "Condition", resp_name = get_response_name("Time_GR")) |> 
+  save_png(filename = glue("[{get_model_tag(behavior_pups_mod_GR)}] Boxplots - by [Condition]"), subfolder = behavior_target_pups, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 ```{r fig.width = 6}
-modeled_temporal_plot(
-  behavior_pups_mod_GR, behavior_pups_mod_GR_emm, behavior_pups_mod_GR_contrasts, 
-  time = "Stage", y_title = get_response_name("Time_GR")
-) |> save_png(filename = glue("[{get_model_tag(behavior_pups_mod_GR)}] - Temporal evolution"), subfolder = behavior_target_pups, dpi = 600, width = 10, height = 8)
+modeled_temporal_plot(behavior_pups_mod_GR, time = "Stage", resp_name = get_response_name("Time_GR")) |> 
+  save_png(filename = glue("[{get_model_tag(behavior_pups_mod_GR)}] - Temporal evolution"), subfolder = behavior_target_pups, dpi = dpi_save_png, width = 10, height = 8)
 ```
 
 
@@ -393,21 +391,18 @@ predict(behavior_pups_mod_GR, type = "response") |>
 **Condition:**
 
 ```{r}
-distribution_summary(behavior_pups_data, dvs = c("Time_RR", "Time_RR_zi", "Time_RR_beta"), between = "Condition")
+distribution_summary(behavior_pups_data, dvs = c("Time_RR"), between = "Condition")
 ```
 
 ```{r}
-purrr::map(
-  c("Time_RR", "Time_RR_zi", "Time_RR_beta"),
-  \(var) hist_plot(behavior_pups_data, var = var)
-)
+hist_plot(behavior_pups_data, var = "Time_RR")
 ```
 
 
 **Stage:Condition:**
 
-```{r fig.width = 6, fig.height = 3}
-temporal_dist_plot(behavior_pups_data, "Time_RR")
+```{r fig.width = 6, fig.height = 8}
+hist_plot(behavior_pups_data, var = "Time_RR", facet = "Condition", facet2 = "Stage")
 ```
 
 Temporal evolution of Time_RR:
@@ -450,7 +445,7 @@ performance::performance(behavior_pups_mod_RR_gauss_AR1, metrics = c("AIC", "AIC
 
 ```{r}
 behavior_pups_mod_RR_gamma_AR1 <- glmmTMB::glmmTMB(
-  Time_RR ~ Condition * Stage + cs(Stage + 0 | Mouse),
+  Time_RR ~ Condition * Stage + ar1(Stage + 0 | Mouse),
   # disp = ~ Stage,
   family = Gamma("log"),
   data = behavior_pups_data,
@@ -551,7 +546,7 @@ LRT(behavior_pups_mod_RR, pred = "Condition")
 Marginal Means:
 
 ```{r}
-(behavior_pups_mod_RR_emm <- inner_join(
+inner_join(
   emmeans::emmeans(
     object = behavior_pups_mod_RR, 
     specs = ~ Stage | Condition,
@@ -565,37 +560,34 @@ Marginal Means:
     dvs = insight::find_response(behavior_pups_mod_RR), 
     between = c("Condition", "Stage")
   ) |> select(Stage, Condition, Observed = Mean)
-) |> select(Stage, Condition, Observed, Modeled, everything()))
+) |> select(Stage, Condition, Observed, Modeled, everything())
 ```
 
 Contrasts:
 
 ```{r}
-(behavior_pups_mod_RR_contrasts <- emmeans::emmeans(
+emmeans::emmeans(
   object = behavior_pups_mod_RR, 
   specs = ~ Condition | Stage,
   component = "cond",
   type = "response",
   adjust = "none"
-) 
-|> emmeans::contrast(method = "pairwise", type = "response", infer = TRUE)
-|> data.frame()
-|> select(contrast, Stage, matches("estimate|risk|odds|^ratio|^difference"), matches("CL$"), p.value)
-)
+) |> 
+  emmeans::contrast(method = "pairwise", type = "response", infer = TRUE) |> 
+  data.frame() |> 
+  select(contrast, Stage, matches("estimate|risk|odds|^ratio|^difference"), matches("CL$"), p.value)
 ```
 
 Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(behavior_pups_mod_RR, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(behavior_pups_mod_RR)}] Boxplots - by [Condition]"), subfolder = behavior_target_pups, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(behavior_pups_mod_RR)}] Boxplots - by [Condition]"), subfolder = behavior_target_pups, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 ```{r fig.width = 8}
-modeled_temporal_plot(
-  behavior_pups_mod_RR, behavior_pups_mod_RR_emm, behavior_pups_mod_RR_contrasts, 
-  time = "Stage", y_title = get_response_name("Time_RR"), show_observed = F
-) |> save_png(filename = glue("[{get_model_tag(behavior_pups_mod_RR)}] - Temporal evolution"), subfolder = behavior_target_pups, dpi = 600, width = 10, height = 8)
+modeled_temporal_plot(behavior_pups_mod_RR, time = "Stage") |> 
+  save_png(filename = glue("[{get_model_tag(behavior_pups_mod_RR)}] - Temporal evolution"), subfolder = behavior_target_pups, dpi = dpi_save_png, width = 10, height = 8)
 ```
 
 
@@ -823,7 +815,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(behavior_teens_mod_Grip, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(behavior_teens_mod_Grip)}] Boxplots - by [Condition]"), subfolder = behavior_target_teens, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(behavior_teens_mod_Grip)}] Boxplots - by [Condition]"), subfolder = behavior_target_teens, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 
@@ -851,14 +843,14 @@ distribution_summary(behavior_adults_Morris_data, dvs = "Path_Efficiency", betwe
 hist_plot(behavior_adults_Morris_data, var = "Path_Efficiency")
 ```
 
-**Session:Condition:**
+**Stage:Condition:**
 
 ```{r fig.width = 6, fig.height = 3}
-temporal_dist_plot(behavior_adults_Morris_data, "Path_Efficiency")
+hist_plot(behavior_adults_Morris_data, "Path_Efficiency")
 ```
 
 ```{r fig.width = 6}
-temporal_plot(behavior_adults_Morris_data, resp = "Path_Efficiency", pred = "Condition", time = "Session", y_name = get_response_name("Path_Efficiency"))
+temporal_plot(behavior_adults_Morris_data, resp = "Path_Efficiency", pred = "Condition", time = "Stage", y_name = get_response_name("Path_Efficiency"))
 ```
 
 
@@ -889,7 +881,7 @@ parameters(mod_behavior_adults_Morris_PE_agg$full_model, effects = "fixed", ci_m
 
 ```{r}
 mod_behavior_adults_Morris_PE_GLMM_gauss <- glmmTMB(
-  Path_Efficiency ~ Condition * Session + (1 | Mouse),
+  Path_Efficiency ~ Condition * Stage + (1 | Mouse),
   data = behavior_adults_Morris_data,
   family = gaussian("log"),
   REML = T
@@ -904,7 +896,7 @@ performance::performance(mod_behavior_adults_Morris_PE_GLMM_gauss)
 
 ```{r}
 mod_behavior_adults_Morris_PE_GLMM_beta <- glmmTMB(
-  Path_Efficiency ~ Condition * Session + (1 | Mouse),
+  Path_Efficiency ~ Condition * Stage + (1 | Mouse),
   data = behavior_adults_Morris_data,
   family = beta_family("logit"),
   REML = T
@@ -921,7 +913,7 @@ performance::performance(mod_behavior_adults_Morris_PE_GLMM_beta)
 
 ```{r}
 mod_behavior_adults_Morris_PE_AR1_beta <- glmmTMB(
-  Path_Efficiency ~ Condition * Session + ar1(Session + 0 | Mouse),
+  Path_Efficiency ~ Condition * Stage + ar1(Stage + 0 | Mouse),
   data = behavior_adults_Morris_data,
   family = beta_family("logit"),
   REML = T
@@ -967,12 +959,12 @@ mod_behavior_adults_Morris_PE_dharma_t <- mod_behavior_adults_Morris_PE_dharma$s
 
 ```{r fig.width = 8}
 ppc_plots(mod_behavior_adults_Morris_PE, mod_behavior_adults_Morris_PE_dharma_t, term = "Condition")
-ppc_plots(mod_behavior_adults_Morris_PE, mod_behavior_adults_Morris_PE_dharma_t, term = "Session")
+ppc_plots(mod_behavior_adults_Morris_PE, mod_behavior_adults_Morris_PE_dharma_t, term = "Stage")
 ```
 
 ```{r fig.width = 8}
 ppc_stat_plots(mod_behavior_adults_Morris_PE, mod_behavior_adults_Morris_PE_dharma_t, term = "Condition")
-ppc_stat_plots(mod_behavior_adults_Morris_PE, mod_behavior_adults_Morris_PE_dharma_t, term = "Session")
+ppc_stat_plots(mod_behavior_adults_Morris_PE, mod_behavior_adults_Morris_PE_dharma_t, term = "Stage")
 ```
 
 **Potential outliers:**
@@ -1015,48 +1007,47 @@ LRT(mod_behavior_adults_Morris_PE, pred = "Condition")
 Marginal means:
 
 ```{r}
-(mod_behavior_adults_Morris_PE_emm <- inner_join(
+inner_join(
   emmeans::emmeans(
     object = mod_behavior_adults_Morris_PE, 
-    specs = ~ Session | Condition, 
+    specs = ~ Stage | Condition, 
     type = "response",
     lmer.df = "satterthwaite"
   ) |> as.data.frame() |> 
-    select(Session, Condition, Modeled = matches("emmean|response"), matches("CL$")),
+    select(Stage, Condition, Modeled = matches("emmean|response"), matches("CL$")),
 
   distribution_summary(
     insight::get_data(mod_behavior_adults_Morris_PE), 
     dvs = insight::find_response(mod_behavior_adults_Morris_PE), 
-    between = c("Condition", "Session")
-  ) |> select(Session, Condition, Observed = Mean)
-) |> select(Session, Condition, Observed, Modeled, everything()))
+    between = c("Condition", "Stage")
+  ) |> select(Stage, Condition, Observed = Mean)
+) |> select(Stage, Condition, Observed, Modeled, everything())
 ```
 
 Contrasts:
 
 ```{r}
-(mod_behavior_adults_Morris_PE_contrasts <- emmeans::emmeans(
+emmeans::emmeans(
   object = mod_behavior_adults_Morris_PE, 
-  specs = ~ Condition | Session, 
+  specs = ~ Condition | Stage, 
   type = "response",
   adjust = "none"
-) 
-|> emmeans::contrast(method = "pairwise", type = "response", infer = TRUE) 
-|> data.frame()
-|> select(contrast, Session, matches("estimate|risk|odds|^ratio|^difference"), matches("CL$"), p.value)
-)
+) |> 
+  emmeans::contrast(method = "pairwise", type = "response", infer = TRUE) |> 
+  data.frame() |> 
+  select(contrast, Stage, matches("estimate|risk|odds|^ratio|^difference"), matches("CL$"), p.value)
 ```
 
 Plots:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(mod_behavior_adults_Morris_PE, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(mod_behavior_adults_Morris_PE)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(mod_behavior_adults_Morris_PE)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 ```{r fig.width = 6}
-modeled_temporal_plot(mod_behavior_adults_Morris_PE, mod_behavior_adults_Morris_PE_emm, mod_behavior_adults_Morris_PE_contrasts, time = "Session") |> 
-  save_png(filename = glue("[{get_model_tag(mod_behavior_adults_Morris_PE)}] Temporal evolution - by [Condition]"), subfolder = behavior_target_adults, dpi = 600, width = 10, height = 8)
+modeled_temporal_plot(mod_behavior_adults_Morris_PE) |> 
+  save_png(filename = glue("[{get_model_tag(mod_behavior_adults_Morris_PE)}] Temporal evolution - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 10, height = 8)
 ```
 
 
@@ -1077,14 +1068,14 @@ distribution_summary(behavior_adults_Morris_data, dvs = "Latency_Plat", between 
 hist_plot(behavior_adults_Morris_data, var = "Latency_Plat")
 ```
 
-**Session:Condition:**
+**Stage:Condition:**
 
-```{r fig.width = 6, fig.height = 3}
-temporal_dist_plot(behavior_adults_Morris_data, "Latency_Plat")
+```{r fig.width = 6, fig.height = 8}
+hist_plot(behavior_adults_Morris_data, var = "Latency_Plat", facet = "Condition", facet2 = "Stage")
 ```
 
 ```{r fig.width = 6}
-temporal_plot(behavior_adults_Morris_data, resp = "Latency_Plat", pred = "Condition", time = "Session", y_name = get_response_name("Latency_Plat"))
+temporal_plot(behavior_adults_Morris_data, resp = "Latency_Plat", pred = "Condition", time = "Stage", y_name = get_response_name("Latency_Plat"))
 ```
 
 
@@ -1115,7 +1106,7 @@ parameters(mod_behavior_adults_Morris_LP_agg$full_model, effects = "fixed", ci_m
 
 ```{r}
 mod_behavior_adults_Morris_LP_GLMM_gauss <- glmmTMB(
-  Latency_Plat ~ Condition * Session + (1 | Mouse),
+  Latency_Plat ~ Condition * Stage + (1 | Mouse),
   data = behavior_adults_Morris_data,
   family = gaussian("log"),
   REML = T
@@ -1130,7 +1121,7 @@ performance::performance(mod_behavior_adults_Morris_LP_GLMM_gauss)
 
 ```{r}
 mod_behavior_adults_Morris_LP_GLMM_gamma <- glmmTMB(
-  Latency_Plat ~ Condition * Session + (1 | Mouse),
+  Latency_Plat ~ Condition * Stage + (1 | Mouse),
   data = behavior_adults_Morris_data,
   family = Gamma("log"),
   REML = T
@@ -1147,7 +1138,7 @@ performance::performance(mod_behavior_adults_Morris_LP_GLMM_gamma)
 
 ```{r}
 mod_behavior_adults_Morris_LP_AR1_gamma <- glmmTMB(
-  Latency_Plat ~ Condition * Session + ar1(Session + 0 | Mouse),
+  Latency_Plat ~ Condition * Stage + ar1(Stage + 0 | Mouse),
   data = behavior_adults_Morris_data,
   family = Gamma("log"),
   REML = T
@@ -1193,12 +1184,12 @@ mod_behavior_adults_Morris_LP_dharma_t <- mod_behavior_adults_Morris_LP_dharma$s
 
 ```{r fig.width = 8}
 ppc_plots(mod_behavior_adults_Morris_LP, mod_behavior_adults_Morris_LP_dharma_t, term = "Condition")
-ppc_plots(mod_behavior_adults_Morris_LP, mod_behavior_adults_Morris_LP_dharma_t, term = "Session")
+ppc_plots(mod_behavior_adults_Morris_LP, mod_behavior_adults_Morris_LP_dharma_t, term = "Stage")
 ```
 
 ```{r fig.width = 8}
 ppc_stat_plots(mod_behavior_adults_Morris_LP, mod_behavior_adults_Morris_LP_dharma_t, term = "Condition")
-ppc_stat_plots(mod_behavior_adults_Morris_LP, mod_behavior_adults_Morris_LP_dharma_t, term = "Session")
+ppc_stat_plots(mod_behavior_adults_Morris_LP, mod_behavior_adults_Morris_LP_dharma_t, term = "Stage")
 ```
 
 **Potential outliers:**
@@ -1242,48 +1233,47 @@ LRT(mod_behavior_adults_Morris_LP, pred = "Condition")
 Marginal means:
 
 ```{r}
-(mod_behavior_adults_Morris_LP_emm <- inner_join(
+inner_join(
   emmeans::emmeans(
     object = mod_behavior_adults_Morris_LP, 
-    specs = ~ Session | Condition, 
+    specs = ~ Stage | Condition, 
     type = "response",
     lmer.df = "satterthwaite"
   ) |> as.data.frame() |> 
-    select(Session, Condition, Modeled = response, matches("CL$")),
+    select(Stage, Condition, Modeled = response, matches("CL$")),
 
   distribution_summary(
     insight::get_data(mod_behavior_adults_Morris_LP), 
     dvs = insight::find_response(mod_behavior_adults_Morris_LP), 
-    between = c("Condition", "Session")
-  ) |> select(Session, Condition, Observed = Mean)
-) |> select(Session, Condition, Observed, Modeled, everything()))
+    between = c("Condition", "Stage")
+  ) |> select(Stage, Condition, Observed = Mean)
+) |> select(Stage, Condition, Observed, Modeled, everything())
 ```
 
 Contrasts:
 
 ```{r}
-(mod_behavior_adults_Morris_LP_contrasts <- emmeans::emmeans(
+emmeans::emmeans(
   object = mod_behavior_adults_Morris_LP, 
-  specs = ~ Condition | Session, 
+  specs = ~ Condition | Stage, 
   type = "response",
   adjust = "none"
-) 
-|> emmeans::contrast(method = "pairwise", type = "response", infer = TRUE) 
-|> data.frame()
-|> select(contrast, Session, matches("estimate|risk|odds|^ratio|^difference"), matches("CL$"), p.value)
-)
+) |> 
+  emmeans::contrast(method = "pairwise", type = "response", infer = TRUE) |> 
+  data.frame() |> 
+  select(contrast, Stage, matches("estimate|risk|odds|^ratio|^difference"), matches("CL$"), p.value)
 ```
 
 Plots:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(mod_behavior_adults_Morris_LP, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(mod_behavior_adults_Morris_LP)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(mod_behavior_adults_Morris_LP)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 ```{r fig.width = 6}
-modeled_temporal_plot(mod_behavior_adults_Morris_LP, mod_behavior_adults_Morris_LP_emm, mod_behavior_adults_Morris_LP_contrasts, time = "Session") |> 
-  save_png(filename = glue("[{get_model_tag(mod_behavior_adults_Morris_LP)}] Temporal evolution - by [Condition]"), subfolder = behavior_target_adults, dpi = 600, width = 10, height = 8)
+modeled_temporal_plot(mod_behavior_adults_Morris_LP) |> 
+  save_png(filename = glue("[{get_model_tag(mod_behavior_adults_Morris_LP)}] Temporal evolution - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 10, height = 8)
 ```
 
 
@@ -1306,12 +1296,12 @@ hist_plot(behavior_adults_Morris_data, var = "Freezing")
 
 **Stage:Condition:**
 
-```{r fig.width = 6, fig.height = 3}
-temporal_dist_plot(behavior_adults_Morris_data, "Freezing")
+```{r fig.width = 6, fig.height = 8}
+hist_plot(behavior_adults_Morris_data, var = "Freezing", facet = "Condition", facet2 = "Stage")
 ```
 
 ```{r fig.width = 6}
-temporal_plot(behavior_adults_Morris_data, resp = "Freezing", pred = "Condition", time = "Day", y_name = get_response_name("Freezing"))
+temporal_plot(behavior_adults_Morris_data, resp = "Freezing", pred = "Condition", time = "Stage", y_name = get_response_name("Freezing"))
 ```
 
 
@@ -1342,7 +1332,7 @@ parameters(mod_behavior_adults_Morris_Freezing_agg$full_model, effects = "fixed"
 
 ```{r}
 mod_behavior_adults_Morris_Freezing_GLMM_gauss <- glmmTMB(
-  Freezing ~ Condition * Session + (1 | Mouse),
+  Freezing ~ Condition * Stage + (1 | Mouse),
   data = behavior_adults_Morris_data,
   family = gaussian("log"),
   REML = T
@@ -1357,7 +1347,7 @@ performance::performance(mod_behavior_adults_Morris_Freezing_GLMM_gauss)
 
 ```{r}
 mod_behavior_adults_Morris_Freezing_GLMM_gamma <- glmmTMB(
-  Freezing ~ Condition * Session + (1 | Mouse),
+  Freezing ~ Condition * Stage + (1 | Mouse),
   data = behavior_adults_Morris_data,
   family = Gamma("log"),
   REML = T
@@ -1374,7 +1364,7 @@ performance::performance(mod_behavior_adults_Morris_Freezing_GLMM_gamma)
 
 ```{r}
 mod_behavior_adults_Morris_Freezing_AR1_gamma <- glmmTMB(
-  Freezing ~ Condition * Session + ar1(Session + 0 | Mouse),
+  Freezing ~ Condition * Stage + ar1(Stage + 0 | Mouse),
   data = behavior_adults_Morris_data,
   family = Gamma("log"),
   REML = T
@@ -1419,12 +1409,12 @@ mod_behavior_adults_Morris_Freezing_dharma_t <- mod_behavior_adults_Morris_Freez
 
 ```{r fig.width = 8}
 ppc_plots(mod_behavior_adults_Morris_Freezing, mod_behavior_adults_Morris_Freezing_dharma_t, term = "Condition")
-ppc_plots(mod_behavior_adults_Morris_Freezing, mod_behavior_adults_Morris_Freezing_dharma_t, term = "Session")
+ppc_plots(mod_behavior_adults_Morris_Freezing, mod_behavior_adults_Morris_Freezing_dharma_t, term = "Stage")
 ```
 
 ```{r fig.width = 8}
 ppc_stat_plots(mod_behavior_adults_Morris_Freezing, mod_behavior_adults_Morris_Freezing_dharma_t, term = "Condition")
-ppc_stat_plots(mod_behavior_adults_Morris_Freezing, mod_behavior_adults_Morris_Freezing_dharma_t, term = "Session")
+ppc_stat_plots(mod_behavior_adults_Morris_Freezing, mod_behavior_adults_Morris_Freezing_dharma_t, term = "Stage")
 ```
 
 **Potential outliers:**
@@ -1468,48 +1458,47 @@ LRT(mod_behavior_adults_Morris_Freezing, pred = "Condition")
 Marginal means:
 
 ```{r}
-(mod_behavior_adults_Morris_Freezing_emm <- inner_join(
+inner_join(
   emmeans::emmeans(
     object = mod_behavior_adults_Morris_Freezing, 
-    specs = ~ Session | Condition, 
+    specs = ~ Stage | Condition, 
     type = "response",
     lmer.df = "satterthwaite"
   ) |> as.data.frame() |> 
-    select(Session, Condition, Modeled = matches("response|emmean"), matches("CL$")),
+    select(Stage, Condition, Modeled = matches("response|emmean"), matches("CL$")),
 
   distribution_summary(
     insight::get_data(mod_behavior_adults_Morris_Freezing), 
     dvs = insight::find_response(mod_behavior_adults_Morris_Freezing), 
-    between = c("Condition", "Session")
-  ) |> select(Session, Condition, Observed = Mean)
-) |> select(Session, Condition, Observed, Modeled, everything()))
+    between = c("Condition", "Stage")
+  ) |> select(Stage, Condition, Observed = Mean)
+) |> select(Stage, Condition, Observed, Modeled, everything())
 ```
 
 Contrasts:
 
 ```{r}
-(mod_behavior_adults_Morris_Freezing_contrasts <- emmeans::emmeans(
+emmeans::emmeans(
   object = mod_behavior_adults_Morris_Freezing, 
-  specs = ~ Condition | Session, 
+  specs = ~ Condition | Stage, 
   type = "response",
   adjust = "none"
-) 
-|> emmeans::contrast(method = "pairwise", type = "response", infer = TRUE) 
-|> data.frame()
-|> select(contrast, Session, matches("estimate|risk|odds|^ratio|^difference"), matches("CL$"), p.value)
-)
+) |> 
+  emmeans::contrast(method = "pairwise", type = "response", infer = TRUE) |> 
+  data.frame() |> 
+  select(contrast, Stage, matches("estimate|risk|odds|^ratio|^difference"), matches("CL$"), p.value)
 ```
 
 Plots:
 
 ```{r fig.width = 5, fig.height = 8}
 make_signif_boxplot(mod_behavior_adults_Morris_Freezing, xaxis = "Condition") |> 
-  save_png(filename = glue("[{get_model_tag(mod_behavior_adults_Morris_Freezing)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(mod_behavior_adults_Morris_Freezing)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 ```{r fig.width = 6}
-modeled_temporal_plot(mod_behavior_adults_Morris_Freezing, mod_behavior_adults_Morris_Freezing_emm, mod_behavior_adults_Morris_Freezing_contrasts, time = "Session") |> 
-  save_png(filename = glue("[{get_model_tag(mod_behavior_adults_Morris_Freezing)}] Temporal evolution - by [Condition]"), subfolder = behavior_target_adults, dpi = 600, width = 10, height = 8)
+modeled_temporal_plot(mod_behavior_adults_Morris_Freezing) |> 
+  save_png(filename = glue("[{get_model_tag(mod_behavior_adults_Morris_Freezing)}] Temporal evolution - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 10, height = 8)
 ```
 
 
@@ -1696,7 +1685,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 (make_signif_boxplot(behavior_adults_mod_PDT, xaxis = "Condition", cluster = NULL) + scale_y_continuous(labels = scales::percent)) |> 
-  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_PDT)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_PDT)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 
@@ -1882,7 +1871,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 (make_signif_boxplot(behavior_adults_mod_PTT, xaxis = "Condition", cluster = NULL) + scale_y_continuous(labels = scales::percent))|> 
-  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_PTT)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_PTT)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 
@@ -2069,7 +2058,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(behavior_adults_mod_AMS, xaxis = "Condition", cluster = NULL) |> 
-  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_AMS)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_AMS)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 
@@ -2256,7 +2245,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(behavior_adults_mod_AD, xaxis = "Condition", cluster = NULL) |> 
-  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_AD)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_AD)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 
@@ -2443,7 +2432,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(behavior_adults_mod_CT, xaxis = "Condition", cluster = NULL) |> 
-  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_CT)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_CT)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 
@@ -2497,9 +2486,9 @@ behavior_adults_mod_NM <- glmmTMB(
   REML = T
 )
 
-parameters::parameters(behavior_adults_mod_NM_gauss)
+parameters::parameters(behavior_adults_mod_NM)
 cat("\n")
-performance::performance(behavior_adults_mod_NM_gauss)
+performance::performance(behavior_adults_mod_NM)
 ```
 
 <!------------------------------------------------------------------------------>
@@ -2601,7 +2590,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(behavior_adults_mod_NM, xaxis = "Condition", cluster = NULL) |> 
-  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_NM)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_NM)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 
@@ -2788,7 +2777,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(behavior_adults_mod_ORT, xaxis = "Condition", cluster = NULL) |> 
-  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_ORT)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_ORT)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 
@@ -2975,7 +2964,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(behavior_adults_mod_OGT, xaxis = "Condition", cluster = NULL) |> 
-  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_OGT)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_OGT)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 
@@ -3162,7 +3151,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(behavior_adults_mod_POT, xaxis = "Condition", cluster = NULL) |> 
-  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_POT)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_POT)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 
@@ -3348,7 +3337,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(behavior_adults_mod_PCT, xaxis = "Condition", cluster = NULL) |> 
-  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_PCT)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_PCT)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 
@@ -3539,7 +3528,7 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(behavior_adults_mod_NEO, xaxis = "Condition", cluster = NULL) |> 
-  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_NEO)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_NEO)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
 
@@ -3730,5 +3719,5 @@ Plot:
 
 ```{r fig.width = 2, fig.height = 3}
 make_signif_boxplot(behavior_adults_mod_NEC, xaxis = "Condition", cluster = NULL) |> 
-  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_NEC)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = 600, width = 5, height = 8)
+  save_png(filename = glue("[{get_model_tag(behavior_adults_mod_NEC)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```

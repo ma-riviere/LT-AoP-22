@@ -10,6 +10,39 @@ log.main("[UTILS] Loading Utils ...")
 
 "%ne%" <- \(lhs, rhs) if(is.null(lhs) || rlang::is_empty(lhs) || lhs == "") return(rhs) else return(lhs)
 
+label_pval <- \(p) paste0(scales::pvalue(p), gtools::stars.pval(p), sep = " ")
+
+get_response_name <- function(var) {
+  if(exists(paste0(var, "_name"))) return(eval(parse(text = get_var_name(!!paste0(var, "_name")))))
+  else return(var)
+}
+
+
+get_model_family <- function(mod) {
+  family <- insight::get_family(mod)$family |> stringr::str_to_sentence()
+  link <- insight::get_family(mod)$link
+  
+  model_tag <- glue::glue("{family} ('{link}')")
+  
+  cov_struct <- stringr::str_match(insight::get_call(mod)$formula |> toString(), "\\s(\\w{2,3})\\(.*\\)")[[2]]
+  if (!is.null(cov_struct) && !is.na(cov_struct) && cov_struct != "") model_tag <- glue::glue("{model_tag} + {toupper(cov_struct)}")
+  
+  return(model_tag)
+}
+
+
+get_model_tag <- function(mod) {
+  resp <- insight::find_response(mod)
+  return(glue::glue("{resp} - {get_model_family(mod)}"))
+}
+
+
+print_model_call <- function(mod) {
+  cat("```{{r}}\n")
+  print(insight::get_call(mod))
+  cat("```\n")
+}
+
 
 ### From: https://michaelbarrowman.co.uk/post/getting-a-variable-name-in-a-pipeline/
 get_var_name <- function(x) {
@@ -54,16 +87,16 @@ get_current_file_name <- function() {
 }
 
 
-save_png <- function(plot, filename = NULL, subfolder = "", dpi = 600, width = 8, height = 8, display = TRUE) {
+save_png <- function(plot, filename = NULL, subfolder = "", bg = "white", dpi = 600, width = 8, height = 8, display = TRUE) {
   if(is.null(filename)) filename <- as.list(match.call()[-1])$plot
   
   file_path <- here("fig", paste0(filename, ".png"))
-  if(subfolder != "") {
-    if(!dir.exists(here::here("fig", subfolder))) dir.create(here::here("fig", subfolder))
+  if(!is.null(subfolder) && subfolder != "") {
+    if(!fs::dir_exists(here::here("fig", subfolder))) fs::dir_create(here::here("fig", subfolder))
     file_path <- here("fig", subfolder, paste0(filename, ".png"))
   }
   
-  ggsave(filename = file_path, plot = plot, device = "png", scale = 1, dpi = dpi, width = width, height = height)
+  ggsave(filename = file_path, plot = plot, device = "png", scale = 1, dpi = dpi, width = width, height = height, bg = bg)
   if(display) return(plot)
 }
 
