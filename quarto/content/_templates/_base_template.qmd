@@ -1,0 +1,278 @@
+```{r}
+#| echo: false
+#| output: false
+
+source(here::here("src", "init.R"), echo = FALSE)
+
+current_response <- insight::find_response(models[[1]]) # It should be the same for all compared models ...
+current_predictor_set <- purrr::reduce(purrr::map(models, \(m) insight::find_predictors(m)$conditional), \(acc, l) union(acc, l))
+
+pred2 <- NULL
+if (length(current_predictor_set) >= 2) pred2 <- stringr::str_subset(current_predictor_set, "Condition", negate = TRUE)[[1]]
+
+effects_template_path <- config$templates$effects
+if (!exists("is_temporal")) is_temporal <- FALSE
+if (is_temporal) effects_template_path <- config$templates$effects_temporal
+```
+
+### Data Exploration
+
+```{r}
+#| echo: false
+
+dist_data <- distribution_summary(data, dvs = current_response, between = current_predictor_set) |> select(-Variable)
+
+gt::gt(dist_data, auto_align = TRUE) |> 
+  gt::fmt_number(columns = select(dist_data, where(\(v) is.numeric(v))) |> colnames(), decimals = 3, drop_trailing_zeros = TRUE)
+```
+
+```{r}
+#| echo: false
+
+hist_height <- 5
+
+if(!is.null(pred2)) hist_height <- 4 + n_distinct(data[[pred2]])
+```
+
+```{r}
+#| echo: false
+#| fig.width: 8
+#| fig.height: !expr hist_height
+
+hist_plot(data, var = current_response, facet2 = pred2)
+```
+
+<!--[ Evolution ]-->
+
+```{r}
+#| eval: !expr is_temporal
+#| echo: false
+#| output: asis
+
+cat("♦ Evolution:")
+```
+
+```{r}
+#| eval: !expr is_temporal
+#| echo: false
+#| fig.width: 10
+#| fig.height: 8
+
+temporal_plot(data, resp = current_response, pred = "Condition", time = pred2)
+```
+
+
+<!------------------------------------------------------------------------------>
+### Models & Diagnostics
+
+```{r}
+#| eval: !expr (!is_temporal)
+#| echo: false
+#| output: asis
+
+cat("#### Welch t-test\n\n
+:::{.callout-note}\n
+Not used in the paper, shown for reference.\n\n
+\n
+We mimic a Welch t-test using a mixed-effects model and observation-level random effects.\n
+:::\n
+")
+```
+
+```{r}
+#| eval: !expr (!is_temporal)
+#| echo: !expr (!is_temporal)
+
+mod_agg <- afex::mixed(
+  paste0(current_response, " ~ Condition + (0 + dCondition | ID)"),
+  data = data_agg,
+  method = "S", # Satterthwaite df approximation
+  control = lmerControl(
+    check.nobs.vs.nlev = "ignore", 
+    check.nobs.vs.nRE = "ignore"
+  )
+)
+```
+
+```{r}
+#| eval: !expr (!is_temporal)
+#| echo: false
+
+parameters::parameters(
+  mod_agg$full_model, effects = "fixed", 
+  ci_method = "satterthwaite", drop = "Intercept"
+) |> print_html()
+```
+
+
+#### Generalized Linear Mixed Models
+
+Exploring candidate models:
+
+::: {.panel-tabset}
+
+```{r}
+#| echo: false
+#| results: asis
+
+purrr::map(
+  seq(1, length(models)),
+  \(i) {
+    mod <- models[[i]]
+    knitr::knit_child(config$templates$mod, quiet = TRUE, envir = new.env(parent = environment()))
+  }
+) |> unlist() |> cat(sep = '\n')
+```
+
+:::
+
+<!------------------------------------------------------------------------------>
+### Effects Analysis
+
+```{r}
+#| echo: false
+
+mod <- models[[1]] # First model of the list is the chosen one
+```
+
+:::{.callout-tip collapse="true"}
+
+#### Chosen model: `r get_model_family(mod)`
+
+```{r}
+#| echo: false
+
+print_model_call(mod)
+```
+
+:::
+
+#### Coefficients
+
+❖ All effects *(Wald)*:
+
+```{r}
+#| echo: false
+#| output: false
+
+all_effects <- parameters::parameters(
+  mod, exponentiate = should_exp(mod), 
+  p_adjust = "none", summary = TRUE, digits = 3
+)
+```
+
+```{r}
+#| eval: false
+
+parameters::parameters(
+  mod, exponentiate = should_exp(mod), 
+  p_adjust = "none", summary = TRUE, digits = 3
+)
+```
+
+```{r}
+#| echo: false
+
+print_html(all_effects)
+```
+
+
+❖ Main effects *(Wald Chi-Square)*:
+
+```{r}
+#| echo: false
+#| output: false
+
+anova_res <- car::Anova(mod, type = 3) |> broom::tidy() |> 
+  filter(term != "(Intercept)") |> 
+  mutate(p.value = label_pval(p.value)) |> 
+  print_html()
+```
+
+```{r}
+#| eval: false
+
+car::Anova(mod, type = 3)
+```
+
+```{r}
+#| echo: false
+
+anova_res
+```
+
+
+❖ Main effects *(Likelihood Ratio Test)*:
+
+```{r}
+#| echo: false
+#| output: false
+
+lrt_res <- tryCatch(
+  LRT(mod, pred = "Condition"),
+  error = \(e) return(NULL)
+)
+
+display_lrt <- !is.null(lrt_res)
+```
+
+```{r}
+#| eval: false
+#| echo: !expr display_lrt
+
+LRT(mod, pred = "Condition")
+```
+
+```{r}
+#| eval: !expr (!display_lrt)
+#| echo: false
+#| output: asis
+
+cat("*Likelihood Ratio is impossible to compute for this model ...*")
+```
+
+```{r}
+#| eval: !expr display_lrt
+#| echo: false
+
+lrt_res |> as.data.frame() |> mutate(across(matches("^p.|^pr"), \(v) label_pval(v))) |> print_html()
+```
+
+::: {.column-margin}
+
+:::{.callout-important}
+Our `LRT()` method removes the predictor *plus* all its interactions
+:::
+
+:::
+
+#### Marginal Effects
+
+Marginal means & Contrasts of each predictor:
+
+::: {.panel-tabset}
+
+```{r}
+#| echo: false
+#| results: asis
+
+preds <- c(insight::find_predictors(mod)$conditional, insight::find_interactions(mod)$conditional)
+
+purrr::map(
+  seq(1, length(preds)),
+  \(i) {
+    pred <- stringr::str_replace_all(preds[[i]], "[1-9]", "")
+    knitr::knit_child(effects_template_path, quiet = TRUE, envir = new.env(parent = environment()))
+  }
+) |> unlist() |> cat(sep = '\n')
+```
+
+:::
+
+```{r}
+#| echo: false
+
+is_temporal <- FALSE
+```
+
+***

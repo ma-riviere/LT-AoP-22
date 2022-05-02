@@ -1,0 +1,138 @@
+# Thickness
+
+```{r}
+#| echo: false
+#| output: false
+
+source(here::here("src", "init.R"), echo = FALSE)
+```
+
+```{r}
+#| echo: false
+
+responses <- c("Thick_EGL", "Thick_MLPL", "Thick_IGL", "Thick_Total")
+predictors <- c("Condition", "Stage")
+
+data <- (load_Thickness(config$data$thickness_path)
+  |> mutate(Thick_IGL = coalesce(Thick_IGL, Thick_GL), Stage = factor(Stage))
+  |> select(Mouse, Slice, any_of(predictors), any_of(responses))
+)
+
+data_agg <- (data
+  |> group_by(Stage, Mouse, Condition) 
+  |> summarize(across(matches(responses), .fns = \(.x) mean(.x, na.rm = T))) 
+  |> ungroup() 
+  |> mutate(dCondition = as.numeric(Condition == "IH")) 
+  |> rowid_to_column("ID")
+)
+
+contrasts(data$Condition) <- contr.sum
+contrasts(data$Stage) <- contr.sum
+
+### Variables:
+
+Thick_Total_name <- "Total thickness of the cerebellar cortex *(µm)*"
+Thick_EGL_name <- "EGL thickness *(µm)*"
+Thick_MLPL_name <- "ML+PL thickness *(µm)*"
+Thick_IGL_name <- "IGL thickness *(µm)*"
+```
+
+❖ **Data**
+
+```{r}
+#| echo: false
+
+n_samp <- 15
+
+kable_html(data |> head(n_samp))
+```
+
+(*Sample of `r n_samp` data points*)
+
+❖ **Correlations**
+
+```{r}
+#| echo: false
+#| fig.width: 8
+
+corr_matrix_plot(data, vars = c(c(predictors, "Mouse"), responses))
+```
+
+
+## EGL Thickness [P12 only]
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Thick_EGL ~ Condition + (1 | Mouse) + (1 | Slice), family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(Thick_EGL ~ Condition + (1 | Mouse) + (1 | Slice), family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## ML+PL Thickness [P12 + P21]
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Thick_MLPL ~ Condition * Stage + (1 | Mouse) + (1 | Slice), family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(Thick_MLPL ~ Condition * Stage + (1 | Mouse) + (1 | Slice), family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## (I)GL Thickness [P12 + P21]
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Thick_IGL ~ Condition * Stage + (1 | Mouse) + (1 | Slice), family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(Thick_IGL ~ Condition * Stage + (1 | Mouse) + (1 | Slice), family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+## Total Thickness [P12 + P21]
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Thick_Total ~ Condition * Stage + (1 | Mouse) + (1 | Slice), family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(Thick_Total ~ Condition * Stage + (1 | Mouse) + (1 | Slice), family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```

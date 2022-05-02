@@ -1,0 +1,220 @@
+# VGLUT
+
+*Vesicular-Glutamate Transporter 2*
+
+```{r}
+#| echo: false
+#| output: false
+
+source(here::here("src", "init.R"), echo = FALSE)
+```
+
+```{r}
+#| echo: false
+
+responses <- c("A_VGLUT_MF", "A_VGLUT_CF", "A_DD_per_cell", "Vol_DD_per_cell", "A_ML", "Thick_ML", "N_CC")
+predictors <- c("Condition", "Z")
+
+data <- load_vglut(config$data$vglut_path) |> select(Sample, Mouse, any_of(predictors), any_of(responses))
+
+data_agg <- (data
+  |> group_by(Mouse, Condition) 
+  |> summarize(across(matches(responses), .fns = \(.x) mean(.x, na.rm = T))) 
+  |> ungroup() 
+  |> mutate(dCondition = as.numeric(Condition == "IH")) 
+  |> rowid_to_column("ID")
+)
+
+contrasts(data$Condition) <- contr.sum
+contrasts(data$Z) <- contr.sum
+
+### Variables:
+
+A_VGLUT_MF_name <- "Vglut2-labelled Mossy fiber area  \n in the IGL *(10^-4 μm^(2))*"
+A_VGLUT_CF_name  <- "Vglut2-labelled Climbing fiber area  \n in the ML *(10^-4 μm^(2))*"
+A_DD_per_cell_name  <- "Purkinje dendrite area per Purkinje cell body  \n*(10^-4 μm^(2))*"
+Vol_DD_per_cell_name <- "Purkinje dendrite volume per Purkinje cell body  \n *(10^-4 μm^(3))*"
+A_ML_name <- "Molecular layer area *(10^-4 μm^(2))*"
+Thick_ML_name <- "Molecular layer thickness *(μm)*"
+N_CC_name <- "Number of Purkinje cell bodies  \n *(per 413x10^3 μm^(3))*"
+```
+
+❖ **Data**
+
+```{r}
+#| echo: false
+
+n_samp <- 15
+
+kable_html(data |> head(n_samp))
+```
+
+(*Sample of `r n_samp` data points*)
+
+❖ **Correlations**
+
+```{r}
+#| echo: false
+#| fig.width: 8
+
+corr_matrix_plot(data |> drop_na(N_CC), vars = c(c(predictors, "Mouse"), responses))
+```
+
+
+## Vglut2-labelled Mossy fiber area (IGL)
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(A_VGLUT_MF ~ Condition * Z + (1 | Mouse), family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(A_VGLUT_MF ~ Condition * Z + (1 | Mouse), family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Vglut2-labelled Climbing fiber area (ML)
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(A_VGLUT_CF ~ Condition * Z + (1 | Mouse), family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(A_VGLUT_CF ~ Condition * Z + (1 | Mouse), family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Purkinje dendrite area (per Purkinje cell body)
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(A_DD_per_cell ~ Condition * Z + (1 | Mouse), family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(A_DD_per_cell ~ Condition * Z + (1 | Mouse), family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Purkinje dendrite volume (per Purkinje cell body)
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Vol_DD_per_cell ~ Condition * Z + (1 | Mouse), family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(Vol_DD_per_cell ~ Condition * Z + (1 | Mouse), family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Molecular layer area
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(A_ML ~ Condition * Z + (1 | Mouse), family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(A_ML ~ Condition * Z + (1 | Mouse), family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Molecular layer thickness
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Thick_ML ~ Condition * Z + (1 | Mouse), family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(Thick_ML ~ Condition * Z + (1 | Mouse), family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Number of Purkinje cell bodies
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(
+    N_CC ~ Condition * Z + (1 | Mouse), 
+    family = genpois("log"), 
+    data = data, 
+    REML = TRUE,
+    control = glmmTMBControl(optimizer = optim, optArgs = list(method = "BFGS"))
+  ),
+  glmmTMB(
+    N_CC ~ Condition * Z + (1 | Mouse), 
+    family = nbinom2("log"), 
+    data = data, 
+    REML = TRUE,
+    control = glmmTMBControl(optimizer = optim, optArgs = list(method = "BFGS"))
+  ),
+  glmmTMB(
+    N_CC ~ Condition * Z + (1 | Mouse), 
+    family = poisson("log"), 
+    data = data, 
+    REML = TRUE,
+    control = glmmTMBControl(optimizer = optim, optArgs = list(method = "BFGS"))
+  )
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```

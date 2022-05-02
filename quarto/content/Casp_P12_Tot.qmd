@@ -1,0 +1,117 @@
+# Caspase [P12] (Total)
+
+```{r}
+#| echo: false
+#| output: false
+
+source(here::here("src", "init.R"), echo = FALSE)
+```
+
+```{r}
+#| echo: false
+
+responses <- c("A_Tot", "Dens_Tot", "Prop_C_Tot")
+predictors <- c("Condition", "Z")
+
+data <- load_Casp("P12") |> select(Stage, Mouse, any_of(predictors), any_of(responses))
+
+data_agg <- (data
+  |> group_by(Mouse, Condition) 
+  |> summarize(across(matches(responses), .fns = \(.x) mean(.x, na.rm = T))) 
+  |> ungroup() 
+  |> mutate(dCondition = as.numeric(Condition == "IH")) 
+  |> rowid_to_column("ID")
+)
+
+contrasts(data$Condition) <- contr.sum
+contrasts(data$Z) <- contr.sum
+
+### Variables:
+
+A_Tot_name <- "Area of the whole slice *(μm²)*"
+N_Tot_name <- "Number of cleaved caspase 3^(+) cells  \n in the whole slice"
+Dens_Tot_name <- "Density of cleaved caspase 3^(+) cells  \n *(cells/μm²)*"
+C_Tot_name <- "Area of cleaved caspase 3^(+) marking  \n in the whole slice *(μm²)*"
+Prop_C_Tot_name <- "Proportion of cleaved caspase 3^(+) marking  \n in the whole slice"
+```
+
+❖ **Data**
+
+```{r}
+#| echo: false
+
+n_samp <- 15
+
+kable_html(data |> head(n_samp))
+```
+
+(*Sample of `r n_samp` data points*)
+
+❖ **Correlations**
+
+```{r}
+#| echo: false
+#| fig.width: 8
+
+corr_matrix_plot(data, vars = c(c(predictors, "Mouse"), responses))
+```
+
+
+## Area of the whole slice
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(A_Tot ~ Condition * Z + (1 | Mouse), family = Gamma("log"), data = data, REML = TRUE),
+  glmmTMB(A_Tot ~ Condition * Z + (1 | Mouse), family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Density of Cleaved Caspase 3+ cells (whole slice)
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Dens_Tot ~ Condition * Z + (1 | Mouse), family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(Dens_Tot ~ Condition * Z + (1 | Mouse), family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Proportion of Cleaved Caspase 3+ marking (whole slice)
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Prop_C_Tot ~ Condition * Z + (1 | Mouse), family = beta_family("logit"), data = data, REML = TRUE), 
+  glmmTMB(Prop_C_Tot ~ Condition * Z + (1 | Mouse), family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```

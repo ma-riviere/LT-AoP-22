@@ -1,7 +1,7 @@
 <div align="center">
  
  <h1>Intermittent hypoxia and cerebellar development</h1>
- <h3><i>Main branch</i></h3>
+ <h3><i>GitHub Pages branch</i></h3>
 
  [![License](https://img.shields.io/badge/license-MIT-blue.svg)](/LICENSE)
  [![DOI](https://zenodo.org/badge/484983414.svg)](https://zenodo.org/badge/latestdoi/484983414)
@@ -21,14 +21,16 @@ Data and R companion code for (Leroux S., Rodriguez-Duboc A., Arabo A., Basille-
 ## ❔ Requirements:
 
 - R version 4.1 or 4.2
+- R Studio version 2022.02 or later
 
 ## 💻 Repository structure:
 
 - `LT-AoP-22.RProj`: R Studio project (open this first).
-- `analysis`: Analysis (R Markdown) files, split by thematic (e.g. behavioral data, ...). 
-  - The first code chunk of any of the .Rmd files will load all the packages required for the project.
 - `data`: The raw data used for this paper.
-- `fig`: The figures outputted by the RMarkdown files.
+- `docs`: The [webpage](https://ma-riviere.github.io/LT-AoP-22/) version of this repository, hosted through GitHub pages.
+  - This webpage showcases the code of the project (and output of said code) in a more accessible manner.
+- `quarto`: The quarto files (.qmd) used to generate the [webpage](https://ma-riviere.github.io/LT-AoP-22/) of this repository.
+  - Reading and knitting .qmd files requires R Studio *v2022.02* or later, and has to be enabled in the Global Options (*R Markdown -> Quarto*).
 - `R`: R scripts declaring the functions called withing the analysis files (e.g. `viz.R` for the figures, `data.R` for the data loading).
 - `config.yml`: Indexes the paths to various external files used within the code (e.g. data, templates, ...).
 

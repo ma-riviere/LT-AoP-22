@@ -1,0 +1,28 @@
+# About {.unnumbered}
+
+This website was made with [Quarto](https://quarto.org/) and hosted through GitHub pages.
+
+```{r}
+#| echo: false
+#| output: false
+
+source(here::here("src", "init.R"), echo = FALSE)
+```
+
+<!--[ Session info ]-->
+
+:::{.callout-tip collapse="true"}
+
+## Expand for Session Info
+
+```{r}
+#| echo: false
+
+pkg_sesh <- sessioninfo::session_info(pkgs = "attached")
+
+pkg_sesh$platform$quarto <- paste(system("quarto --version", intern = TRUE), "@", quarto::quarto_path())
+
+pkg_sesh
+```
+
+:::

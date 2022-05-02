@@ -1,0 +1,9 @@
+```{r}
+#| echo: false
+#| fig.width: !expr width
+#| fig.height: !expr height
+#| layout-ncol: 1
+#| layout-nrow: 1
+
+plot
+```

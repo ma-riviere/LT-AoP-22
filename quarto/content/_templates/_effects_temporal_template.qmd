@@ -1,0 +1,107 @@
+```{r}
+#| echo: false
+#| output: false
+
+source(here::here("src", "init.R"), echo = FALSE)
+
+is_inter <- stringr::str_detect(pred, pattern = ":")
+
+if (is_inter) {
+  inter_preds <- stringr::str_split(pred, pattern = ":")  |> purrr::flatten_chr()
+  time <- stringr::str_subset(inter_preds, "Condition", negate = TRUE)[[1]]
+  
+  plot_width <- 2.5 + purrr::reduce(inter_preds, \(acc, c) acc * n_distinct(data[[c]]), .init = 1)
+  
+  emmeans_formula <- paste0("~ ", paste(inter_preds, collapse = " | ")) |> as.formula()
+} else {
+  plot_width <- 2.5 + (n_distinct(data[[pred]]))
+}
+```
+
+##### `r pred`
+
+❖ **Marginal Means:**
+
+```{r}
+#| eval: !expr (!is_inter)
+#| echo: !expr (!is_inter)
+
+emmeans::emmeans(mod, specs = pred, type = "response")
+```
+
+<!--[ For interactions ]--->
+
+```{r}
+#| eval: !expr is_inter
+#| echo: !expr is_inter
+
+emmeans::emmeans(mod, specs = emmeans_formula, type = "response")
+```
+
+
+❖ **Contrasts:**
+
+```{r}
+#| eval: !expr (!is_inter)
+#| echo: !expr (!is_inter)
+
+emmeans::emmeans(mod, specs = pred, type = "response") |> 
+  contrast(method = "consec", adjust = "none", infer = TRUE)
+```
+
+<!--[ For interactions ]--->
+
+```{r}
+#| eval: !expr is_inter
+#| echo: !expr is_inter
+
+emmeans::emmeans(mod, specs = emmeans_formula, type = "response") |> 
+  contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+<!---------------------------------------------------------->
+
+```{r}
+#| eval: !expr (!is_inter)
+#| echo: false
+#| output: asis
+
+cat("❖ **Boxplot:**")
+```
+
+```{r}
+#| eval: !expr (!is_inter)
+#| echo: false
+
+boxplot <- make_signif_boxplot(mod, xaxis = pred, method = "consec")
+
+if (toupper(pred) != "CONDITION") boxplot <- boxplot + scale_color_viridis_d()
+```
+
+```{r}
+#| eval: !expr (!is_inter)
+#| echo: false
+#| fig.width: !expr plot_width
+#| fig.height: !expr (4 + plot_width/3)
+
+boxplot
+```
+
+<!--[ For interactions ]--->
+
+```{r}
+#| eval: !expr is_inter
+#| echo: false
+#| output: asis
+
+cat("❖ **Temporal plot:**")
+```
+
+```{r}
+#| eval: !expr is_inter
+#| echo: false
+#| fig.width: !expr (4 + plot_width/3)
+#| fig.height: 9
+
+modeled_temporal_plot(mod, time = time)
+```

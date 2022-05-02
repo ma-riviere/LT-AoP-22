@@ -1,0 +1,79 @@
+# Cleaved Caspase Activity
+
+```{r}
+#| echo: false
+#| output: false
+
+source(here::here("src", "init.R"), echo = FALSE)
+```
+
+```{r}
+#| echo: false
+
+data <- (load_Casp_Act(config$data$casp_Act_path) 
+ |> group_by(Experiment, Condition)
+ |> mutate(Avg_N = ifelse(Condition == "N", mean(Fluo_Norm), NA))
+ |> group_by(Experiment)
+ |> fill(Avg_N, .direction = "down")
+ |> mutate(Fluo_Norm = Fluo_Norm - Avg_N)
+ |> select(-Avg_N)
+ |> ungroup()
+)
+
+data_agg <- (data
+  |> group_by(Mouse, Condition) 
+  |> summarize(Fluo_Norm = mean(Fluo_Norm)) 
+  |> ungroup() 
+  |> mutate(dCondition = as.numeric(Condition == "IH")) 
+  |> rowid_to_column("ID")
+)
+
+contrasts(data$Condition) <- contr.sum
+contrasts(data$Experiment) <- contr.sum
+
+### Variables:
+
+responses <- c("Fluo_Norm")
+predictors <- c("Condition")
+
+Fluo_Norm_name <- "Enzymatic Activity of Caspase 3/7  \n *(Normalized Fluorescence)*"
+```
+
+❖ **Data**
+
+```{r}
+#| echo: false
+
+n_samp <- 15
+
+kable_html(data |> head(n_samp))
+```
+
+(*Sample of `r n_samp` data points*)
+
+❖ **Correlations**
+
+```{r}
+#| echo: false
+#| fig.width: 8
+
+corr_matrix_plot(data, vars = c(c(predictors, "Mouse"), responses))
+```
+
+## Normalized Fluorescence of Caspase 3 Activity
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Fluo_Norm ~ Condition + (1 | Mouse), family = gaussian("identity"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```

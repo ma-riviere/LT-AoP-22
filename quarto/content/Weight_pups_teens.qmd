@@ -1,0 +1,78 @@
+# Weight [Pups & Teens]
+
+```{r}
+#| echo: false
+#| output: false
+
+source(here::here("src", "init.R"), echo = FALSE)
+```
+
+```{r}
+#| echo: false
+
+responses <- c("Weight")
+predictors <- c("Condition", "Stage")
+
+data <- load_Weights(config$data$weight_path, "Pups_Teens") # |> mutate(Day = datawizard::center(Day))
+
+contrasts(data$Condition) <- contr.sum
+contrasts(data$Stage) <- contr.sum
+
+### Variables:
+
+Weight_name <- "Mouse Weight *(g)*"
+```
+
+❖ **Data**
+
+```{r}
+#| echo: false
+
+n_samp <- 15
+
+kable_html(data |> head(n_samp))
+```
+
+(*Sample of `r n_samp` data points*)
+
+❖ **Correlations**
+
+```{r}
+#| echo: false
+#| fig.width: 8
+
+corr_matrix_plot(data, vars = c(c(predictors, "Mouse"), responses))
+```
+
+
+## Weight evolution in time (Pups & Teens)
+
+```{r}
+#| echo: false
+
+is_temporal <- TRUE
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(
+    Weight ~ Condition * Stage + ar1(Stage + 0 | Mouse),
+    family = Gamma("log"),
+    data = data,
+    REML = TRUE
+  )
+  # glmmTMB(
+  #   Weight ~ Condition * Stage + (Stage || Mouse),
+  #   family = Gamma("log"),
+  #   data = data,
+  #   REML = TRUE,
+  #   start = list(beta = c(I(mean(data$Weight)), rep(0, 23)))
+  # )
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```

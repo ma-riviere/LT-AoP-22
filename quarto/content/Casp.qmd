@@ -1,0 +1,38 @@
+# Caspase [P12]
+
+```{r}
+#| echo: false
+#| output: false
+
+source(here::here("src", "init.R"), echo = FALSE)
+```
+
+```{r}
+#| echo: false
+
+data <- load_Casp("P12") |>
+  rename_with(.cols = matches("^A_"), .fn = \(c) stringr::str_replace(c, "^A_", "Area_")) |> 
+  rename_with(.cols = matches("^N_"), .fn = \(c) stringr::str_replace(c, "^N_", "Count_")) |> 
+  rename_with(.cols = matches("^C_"), .fn = \(c) stringr::str_replace(c, "^C_", "Colocalization_"))
+
+responses <- c(
+  "Area_Tot", "Count_Tot", "Colocalization_Tot",
+  "Area_EGL", "Count_EGL", "Colocalization_EGL",
+  "Area_ML_PCL", "Count_ML_PCL", "Colocalization_ML_PCL",
+  "Area_IGL_WM", "Count_IGL_WM", "Colocalization_IGL_WM"
+)
+predictors <- c("Condition", "Z")
+
+data <- select(data, Stage, Sample, Mouse, any_of(predictors), any_of(responses))
+
+contrasts(data$Condition) <- contr.sum
+contrasts(data$Z) <- contr.sum
+```
+
+❖ **Composition**
+
+```{r}
+#| fig.width: 8
+
+compositional_plot(data, responses, prefix = c("Area", "Count", "Colocalization"))
+```

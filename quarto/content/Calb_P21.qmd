@@ -1,0 +1,142 @@
+# Calbindin [P21]
+
+```{r}
+#| echo: false
+#| output: false
+
+source(here::here("src", "init.R"), echo = FALSE)
+```
+
+```{r}
+#| echo: false
+
+responses <- c("N_CC", "A_ML", "A_PC_per_cell", "Vol_PC_per_cell")
+predictors <- c("Condition", "Z")
+
+data <- load_Calb_P21(config$data$calb_P21_path) |> select(Sample, Mouse, any_of(predictors), any_of(responses))
+
+data_agg <- (data
+  |> group_by(Mouse, Condition) 
+  |> summarize(across(matches(responses), .fns = \(.x) mean(.x, na.rm = T))) 
+  |> ungroup() 
+  |> mutate(dCondition = as.numeric(Condition == "IH")) 
+  |> rowid_to_column("ID")
+)
+
+contrasts(data$Condition) <- contr.sum
+contrasts(data$Z) <- contr.sum
+
+### Variables:
+
+N_CC_name <- "Number of Purkinje cell bodies  \n *(per 413x10^(3) µm^(3))*"
+A_ML_name <- "Area of the ML *(10^(-4) µm^(2))*"
+A_PC_per_cell_name <- "Purkinje dendrite area *(10^(-4) µm^(2))*  \n per Purkinje cell body"
+Vol_PC_per_cell_name <- "Purkinje dendrite volume *(10^(-4) µm^(3))*  \n per Purkinje cell body"
+```
+
+❖ **Data**
+
+```{r}
+#| echo: false
+
+n_samp <- 15
+
+kable_html(data |> head(n_samp))
+```
+
+(*Sample of `r n_samp` data points*)
+
+❖ **Correlations**
+
+```{r}
+#| echo: false
+#| fig.width: 8
+
+corr_matrix_plot(data, vars = c(c(predictors, "Mouse"), responses))
+```
+
+
+## Number of Purkinje cell bodies
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(N_CC ~ Condition * Z + (1 | Mouse), family = genpois("log"), data = data, REML = TRUE), 
+  glmmTMB(N_CC ~ Condition * Z + (1 | Mouse), family = poisson("log"), data = data, REML = TRUE), 
+  glmmTMB(
+    N_CC ~ Condition * Z + (1 | Mouse), 
+    family = nbinom2("log"), 
+    data = data, 
+    REML = TRUE, 
+    start = list(beta = c(I(mean(data$N_CC)), rep(0, 5)))
+  )
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Area of the ML
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(A_ML ~ Condition * Z + (1 | Mouse), family = Gamma("log"), data = data, REML = TRUE),
+  glmmTMB(A_ML ~ Condition * Z + (1 | Mouse), family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Purkinje dendrite Area per Purkinje cell body
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(A_PC_per_cell ~ Condition * Z + (1 | Mouse), family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(A_PC_per_cell ~ Condition * Z + (1 | Mouse), family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+## Purkinje dendrite Volume per Purkinje cell body
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Vol_PC_per_cell ~ Condition * Z + (1 | Mouse), family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(Vol_PC_per_cell ~ Condition * Z + (1 | Mouse), family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```

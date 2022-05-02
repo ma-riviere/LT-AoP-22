@@ -1,0 +1,114 @@
+```{r}
+#| echo: false
+#| output: false
+
+source(here::here("src", "init.R"), echo = FALSE)
+
+current_data <- insight::get_data(mod)
+
+is_inter <- stringr::str_detect(pred, pattern = ":")
+
+if (is_inter) {
+  inter_preds <- stringr::str_split(pred, pattern = ":")  |> purrr::flatten_chr()
+  
+  plot_width <- 2.5 + purrr::reduce(inter_preds, \(acc, c) acc * n_distinct(current_data[[c]]), .init = 1)
+  
+  emmeans_formula <- paste0("~ ", paste(inter_preds, collapse = " | ")) |> as.formula()
+} else {
+  plot_width <- 2.5 + (n_distinct(current_data[[pred]]))
+}
+```
+
+##### `r pred`
+
+❖ **Marginal Means:**
+
+```{r}
+#| eval: !expr (!is_inter)
+#| echo: !expr (!is_inter)
+
+emmeans::emmeans(mod, specs = pred, type = "response")
+```
+
+<!--[ For interactions ]--->
+
+```{r}
+#| eval: !expr is_inter
+#| echo: !expr is_inter
+
+emmeans::emmeans(mod, specs = emmeans_formula, type = "response")
+```
+
+
+❖ **Contrasts:**
+
+```{r}
+#| eval: !expr (!is_inter)
+#| echo: !expr (!is_inter)
+
+emmeans::emmeans(mod, specs = pred, type = "response") |> 
+  contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+<!--[ For interactions ]--->
+
+```{r}
+#| eval: !expr is_inter
+#| echo: !expr is_inter
+
+emmeans::emmeans(mod, specs = emmeans_formula, type = "response") |> 
+  contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+```{r}
+#| eval: !expr is_inter
+#| echo: false
+#| output: false
+
+emm <- emmeans::emmeans(mod, specs = emmeans_formula, type = "response") |>
+  contrast(interaction = "pairwise", by = NULL, adjust = "none", infer = TRUE)
+
+emm@grid <- rename_with(emm@grid, \(c) stringr::str_remove(c, pattern = "_pairwise"))
+```
+
+```{r}
+#| eval: false
+#| echo: !expr is_inter
+
+emmeans::emmeans(mod, specs = emmeans_formula, type = "response") |>
+  contrast(interaction = "pairwise", by = NULL, adjust = "none", infer = T)
+```
+
+```{r}
+#| eval: !expr is_inter
+#| echo: false
+
+emm
+```
+
+
+❖ **Boxplot:**
+
+```{r}
+#| eval: !expr (!is_inter)
+#| echo: false
+#| fig.width: !expr plot_width
+#| fig.height: 6
+
+boxplot <- make_signif_boxplot(mod, xaxis = pred)
+
+if (toupper(pred) != "CONDITION") boxplot <- boxplot + scale_color_viridis_d()
+
+boxplot
+```
+
+<!--[ For interactions ]--->
+
+```{r}
+#| eval: !expr is_inter
+#| echo: false
+#| fig.width: !expr plot_width
+#| fig.height: 6
+
+make_signif_boxplot_inter(mod, xaxis = inter_preds[[1]], facet = inter_preds[[2]])
+```

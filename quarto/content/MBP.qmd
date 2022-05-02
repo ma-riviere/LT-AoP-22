@@ -1,0 +1,118 @@
+# Myelin Binding Protein
+
+```{r}
+#| echo: false
+#| output: false
+
+source(here::here("src", "init.R"), echo = FALSE)
+```
+
+```{r}
+#| echo: false
+
+responses <- c("Length_Fil", "Area_Fil", "Vol_Fil")
+predictors <- c("Condition")
+
+data <- load_mbp(config$data$mbp_path) |> select(Sample, Mouse, any_of(predictors), any_of(responses))
+
+data_agg <- (data
+  |> group_by(Mouse, Condition) 
+  |> summarize(across(matches(responses), .fns = \(.x) mean(.x, na.rm = T))) 
+  |> ungroup() 
+  |> mutate(dCondition = as.numeric(Condition == "IH")) 
+  |> rowid_to_column("ID")
+)
+
+contrasts(data$Condition) <- contr.treatment
+
+### Variables:
+
+Length_Fil_name <- "Length of myelinated fibers *(10^(-4) μm)*"
+Area_Fil_name <- "Area of myelinated fibers *(10^(-4) μm^(2))*"
+Vol_Fil_name <- "Volume of myelinated fibers *(10^(-4) μm^(3))*"
+```
+
+❖ **Data**
+
+```{r}
+#| echo: false
+
+n_samp <- 15
+
+kable_html(data |> head(n_samp))
+```
+
+(*Sample of `r n_samp` data points*)
+
+❖ **Correlations**
+
+```{r}
+#| echo: false
+#| fig.width: 8
+
+corr_matrix_plot(data, vars = c(c(predictors, "Mouse"), responses))
+```
+
+
+## Length of myelinated fibers
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Length_Fil ~ Condition + (1 | Mouse), family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(Length_Fil ~ Condition + (1 | Mouse), family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Area of myelinated fibers
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Area_Fil ~ Condition + (1 | Mouse), family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(Area_Fil ~ Condition + (1 | Mouse), family = gaussian("log"), data = data, REML = TRUE)
+)
+
+template_output <- knitr::knit_child(config$templates$base, quiet = TRUE)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Volume of myelinated fibers
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Vol_Fil ~ Condition + (1 | Mouse), family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(Vol_Fil ~ Condition + (1 | Mouse), family = gaussian("log"), data = data, REML = TRUE)
+)
+
+template_output <- knitr::knit_child(config$templates$base, quiet = TRUE)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```

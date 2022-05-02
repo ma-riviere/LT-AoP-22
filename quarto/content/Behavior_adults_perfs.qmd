@@ -1,0 +1,316 @@
+# Behavior [Adults] (Perfs)
+
+```{r}
+#| echo: false
+#| output: false
+
+source(here::here("src", "init.R"), echo = FALSE)
+```
+
+```{r}
+#| echo: false
+
+responses <- c(
+  "Percent_Distance_Target", "Percent_Time_Target", # Morris (processed)
+  "Act_Mean_Speed", "Act_Distance", # Actimetry
+  "Crossing_Time", "Nbr_Missteps", # Beam
+  "Rearing_Time", "Grooming_Time", # Openfield
+  "Open_Arms_Time", "Closed_Arms_Time", "Nbr_Entry_Open","Nbr_Entry_Closed" # Elevated Plus Maze
+)
+predictors <- c("Condition")
+
+data <- (
+  purrr::reduce(
+    .x = purrr::map(
+      c("Percent Morris", "Actimetry", "Beam", "Openfield", "Plus Maze"), 
+      .f = \(sheet) load_behavior_adults(config$data$behavior_adults_path, sheet = sheet)
+    ),
+    .f = \(acc, df) inner_join(acc, df, by = c("Mouse", "Condition"))
+  ) 
+  |> mutate(
+      across(matches("percent"), \(.x) .x / 100),
+      across(c("Open_Arms_Time"), \(.x) .x = ifelse(.x == 0, 0.1, .x)) # To be able to fit the Gamma
+  )
+)
+
+data_agg <- (data 
+  |> group_by(Mouse, Condition) 
+  |> summarize(across(all_of(responses), .fns = \(.x) mean(.x, na.rm = T))) 
+  |> ungroup() 
+  |> mutate(dCondition = as.numeric(Condition == "IH"))
+  |> rowid_to_column("ID")
+)
+
+Percent_Distance_Target_name <- "Percentage of distance covered in the target quadrant  \n over the total distance covered"
+Percent_Time_Target_name <- "Percentage of time spent in the target quadrant  \n over the total time of the test"
+Act_Mean_Speed_name <- "Actimetry Mean Speed *(m/s)*"
+Act_Distance_name <- "Actimetry Distance *(m)*"
+Crossing_Time_name <- "Crossing Time *(s)*"
+Nbr_Missteps_name <- "Number of Missteps"
+Rearing_Time_name <- "Rearing Time"
+Grooming_Time_name <- "Grooming Time"
+Open_Arms_Time_name <- "Time in Open Arms"
+Closed_Arms_Time_name  <- "Time in Closed Arms"
+Nbr_Entry_Open_name   <- "Number of Entries in Open Arms"
+Nbr_Entry_Closed_name <- "Number of Entries in Closed Arms"
+
+contrasts(data$Condition) <- contr.treatment
+```
+
+❖ **Data**
+
+```{r}
+#| echo: false
+
+n_samp <- 15
+
+kable_html(data |> head(n_samp))
+```
+
+(*Sample of `r n_samp` data points*)
+
+❖ **Correlations**
+
+```{r}
+#| echo: false
+#| fig.width: 8
+
+corr_matrix_plot(data, vars = c(predictors, responses))
+```
+
+
+## Distance % covered in the target quadrant
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Percent_Distance_Target ~ Condition, family = beta_family("logit"), data = data, REML = TRUE), 
+  glmmTMB(Percent_Distance_Target ~ Condition, family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Time % spent in the target quadrant
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Percent_Time_Target ~ Condition, family = beta_family("logit"), data = data, REML = TRUE), 
+  glmmTMB(Percent_Time_Target ~ Condition, family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Actimetry Mean Speed
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Act_Mean_Speed ~ Condition, family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(Act_Mean_Speed ~ Condition, family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Actimetry Distance
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Act_Distance ~ Condition, family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(Act_Distance ~ Condition, family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Crossing Time
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Crossing_Time ~ Condition, family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(Crossing_Time ~ Condition, family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Number of Missteps
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Nbr_Missteps ~ Condition, family = gaussian("identity"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Rearing Time
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Rearing_Time ~ Condition, family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(Rearing_Time ~ Condition, family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Grooming Time
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Grooming_Time ~ Condition, family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(Grooming_Time ~ Condition, family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Time in Open Arms
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Open_Arms_Time ~ Condition, family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(Open_Arms_Time ~ Condition, family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Time in Closed Arms
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Closed_Arms_Time ~ Condition, family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(Closed_Arms_Time ~ Condition, family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Number of Entries in Open Arms
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Nbr_Entry_Open ~ Condition, family = nbinom2("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Number of Entries in Closed Arms
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Nbr_Entry_Closed ~ Condition, family = nbinom2("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```

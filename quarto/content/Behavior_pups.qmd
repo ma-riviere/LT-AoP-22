@@ -1,0 +1,108 @@
+# Behavior [Pups]
+
+```{r}
+#| echo: false
+#| output: false
+
+source(here::here("src", "init.R"), echo = FALSE)
+```
+
+```{r}
+#| echo: false
+
+responses <- c("Time_RR", "Time_GR")
+predictors <- c("Condition", "Stage")
+
+data <- load_behavior_pups(config$data$behavior_pups_path) |> mutate(Time_GR = ifelse(Time_GR == 0, 0.1, Time_GR))
+
+Time_RR_name <- "Latency to right *(s)*"
+Time_GR_name <- "Latency to fall *(s)*"
+
+contrasts(data$Condition) <- contr.sum
+contrasts(data$Stage) <- contr.sum
+```
+
+❖ **Data**
+
+```{r}
+#| echo: false
+
+n_samp <- 15
+
+kable_html(data |> head(n_samp))
+```
+
+(*Sample of `r n_samp` data points*)
+
+❖ **Correlations**
+
+```{r}
+#| echo: false
+#| fig.width: 8
+
+corr_matrix_plot(data, vars = c(c(predictors, "Mouse"), responses))
+```
+
+
+## Grasping Reflex
+
+```{r}
+#| echo: false
+
+is_temporal <- TRUE
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(
+    Time_GR ~ Condition * Stage + ar1(Stage + 0 | Mouse),
+    family = Gamma("identity"),
+    data = data,
+    REML = TRUE,
+    start = list(beta = c(I(mean(data$Time_GR)), rep(0, 19))),
+    control = glmmTMBControl(optimizer = optim, optArgs = list(method = "BFGS"))
+  )
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Righting Reflex
+
+```{r}
+#| echo: false
+
+is_temporal <- TRUE
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(
+    Time_RR ~ Condition * Stage + ar1(Stage + 0 | Mouse),
+    family = gaussian("identity"),
+    data = data,
+    REML = TRUE,
+    start = list(beta = c(I(mean(data$Time_RR)), rep(0, 19)))
+    # control = glmmTMBControl(optimizer = optim, optArgs = list(method = "BFGS"))
+  ),
+  glmmTMB(
+    Time_RR ~ Condition * Stage + ar1(Stage + 0 | Mouse),
+    family = Gamma("log"),
+    data = data,
+    REML = TRUE,
+    start = list(beta = c(I(mean(data$Time_RR)), rep(0, 19))),
+    control = glmmTMBControl(optimizer = optim, optArgs = list(method = "BFGS"))
+  )
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```

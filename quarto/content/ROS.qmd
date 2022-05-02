@@ -1,0 +1,66 @@
+# Reactive Oxygen Species
+
+```{r}
+#| echo: false
+#| output: false
+
+source(here::here("src", "init.R"), echo = FALSE)
+```
+
+```{r}
+#| echo: false
+
+data <- load_ROS(config$data$ROS_path)
+
+data_agg <- mutate(data, dCondition = as.numeric(Condition == "IH")) |> rowid_to_column("ID")
+
+### Variables:
+
+responses <- c("ROS_perc")
+predictors <- c("Condition")
+
+ROS_perc_name <- "ROS  \n *(% of control)*"
+
+contrasts(data$Condition) <- contr.treatment
+```
+
+❖ **Data**
+
+```{r}
+#| echo: false
+
+n_samp <- 15
+
+kable_html(data |> head(n_samp))
+```
+
+(*Sample of `r n_samp` data points*)
+
+❖ **Correlations**
+
+```{r}
+#| echo: false
+#| fig.width: 8
+
+corr_matrix_plot(data, vars = c(c(predictors, "Mouse"), responses))
+```
+
+
+## ROS (as % increase vs control)
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(ROS_perc ~ Condition, family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(ROS_perc ~ Condition, family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```

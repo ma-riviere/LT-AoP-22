@@ -1,0 +1,113 @@
+project:
+  type: book
+  pre-render: src/setup.R
+  output-dir: "docs"
+  resources: [.nojekyll]
+
+book:
+  title: "Intermittent hypoxia and cerebellar development"
+  subtitle: "R analysis code"
+  date: "2022-05-01"
+  author:
+    - name: "Marc-Aurèle Rivière"
+      orcid: 0000-0002-5108-3382
+    - name: "Agalic Rodriguez-Duboc"
+      orcid: 0000-0002-2084-3780
+  favicon: quarto/favicon.png
+  twitter-card:
+    creator: "@mariviere1"
+  # site-url: "https://ma-riviere.github.io/LT-AoP-22/"
+  repo-url: "https://github.com/ma-riviere/LT-AoP-22/"
+  repo-branch: main
+  page-navigation: true
+  abstract: |
+    Apnea of prematurity (AOP) is caused by respiratory control immaturity and affects nearly 50 % of premature newborns. This pathology induces perinatal intermittent hypoxia (IH), 
+    which leads to neurodevelopmental disorders. The impact on the brain has been well investigated. 
+    However, despite its functional importance and immaturity at birth, the involvement of the cerebellum remains poorly understood. 
+    Therefore, this study aims to identify the effects of IH on cerebellar development using a mouse model of AOP. 
+    At postnatal day 12 (P12), IH-mouse cerebella present higher oxidative stress associated with delayed maturation of the cerebellar cortex and 
+    decreased dendritic arborization of Purkinje cells. Moreover, mice present with growth retardation and motor disorders. 
+    In response to hypoxia, the developing cerebellum triggers compensatory mechanisms resulting in the unaltered organization of the cortical layers from P21 onwards. 
+    Nevertheless, some abnormalities remain in adult Purkinje cells, such as the dendritic densification, the increase in afferent innervation, and axon hypomyelination. 
+    Moreover, this compensation seems insufficient to allow locomotor recovery because adult mice still show motor impairment and significant disorders in spatial learning. 
+    All these findings indicate that the cerebellum is a target of intermittent hypoxia and could contribute to explaining the pathophysiology of AOP.
+  search:
+    location: sidebar
+    type: textbox
+  chapters:
+    - index.qmd
+    - quarto/content/ROS.qmd
+    - part: quarto/content/Casp.qmd
+      chapters:
+        - quarto/content/Casp_P12_Tot.qmd
+        - quarto/content/Casp_P12_EGL.qmd
+        - quarto/content/Casp_P12_ML_PCL.qmd
+        - quarto/content/Casp_P12_IGL_WM.qmd
+        - quarto/content/Casp_Act.qmd
+    - quarto/content/BrDU.qmd
+    - quarto/content/Thickness.qmd
+    - part: "Calbindin"
+      chapters:
+        - quarto/content/Calb_P12.qmd
+        - quarto/content/Calb_P21.qmd
+    - part: "Weight"
+      chapters:
+        - quarto/content/Weight_pups_teens.qmd
+        - quarto/content/Weight_adults.qmd
+    - part: "Behavior"
+      chapters:
+        - quarto/content/Behavior_pups.qmd
+        - quarto/content/Behavior_teens.qmd
+        - quarto/content/Behavior_adults_morris.qmd
+        - quarto/content/Behavior_adults_perfs.qmd
+    - quarto/content/VGlut.qmd
+    - quarto/content/GluD2.qmd
+    - quarto/content/MBP.qmd
+    - quarto/content/DAPI.qmd
+    - quarto/about.qmd
+  page-footer: 
+    left: "Copyright (c) 2022 Marc-Aurele RIVIERE, Agalic RODRIGUEZ-DUBOC"
+    center:
+      - text: "About"
+        href: quarto/about.qmd
+      - text: "License"
+        href: "https://github.com/ma-riviere/LT-AoP-22/blob/main/LICENSE"
+    right:
+      - icon: twitter
+        href: https://twitter.com/mariviere1
+        aria-label: Twitter Link
+      - icon: github
+        href: https://github.com/ma-riviere
+        aria-label: GitHub Link
+  
+format:
+  html:
+    theme:
+      light: default
+      dark: superhero
+    css: quarto/css/style.css
+    toc: true
+    toc-title: "On this page"
+    anchor-sections: true
+    number-sections: true
+    code-link: true
+    fig-width: 8
+    fig-align: center
+    fig-dpi: 300
+    fig-format: svg
+    fig-cap-location: bottom
+    code-block-bg: true
+    code-block-border-left: "#31BAE9"
+    highlight-style: arrow
+    link-external-newwindow: true
+
+engine: knitr
+
+knitr:
+  opts_knit:
+    verbose: false
+
+execute:
+  warning: false
+  message: false
+  # cache: true

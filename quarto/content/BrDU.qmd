@@ -1,0 +1,72 @@
+# BrDU+ cells
+
+```{r}
+#| echo: false
+#| output: false
+
+source(here::here("src", "init.R"), echo = FALSE)
+```
+
+```{r}
+#| echo: false
+
+data <- load_BrDU(config$data$brDU_path)
+
+responses <- c("Dens_BrDU")
+predictors <- c("Condition", "Layer")
+
+data_agg <- (data 
+  |> group_by(Layer, Mouse, Condition) 
+  |> summarize(across(matches(responses), .fns = \(.x) mean(.x, na.rm = T))) 
+  |> ungroup() 
+  |> mutate(dCondition = as.numeric(Condition == "IH")) 
+  |> rowid_to_column("ID")
+)
+
+contrasts(data$Condition) <- contr.treatment
+
+### Variables:
+
+Dens_BrDU_name <- "Density of BrDU^(+) cells  \n *(10^(-5) cells/μm^(3))*"
+```
+
+❖ **Data**
+
+```{r}
+#| echo: false
+
+n_samp <- 15
+
+kable_html(data |> head(n_samp))
+```
+
+(*Sample of `r n_samp` data points*)
+
+❖ **Correlations**
+
+```{r}
+#| echo: false
+#| fig.width: 8
+
+corr_matrix_plot(data, vars = c(c(predictors, "Mouse"), responses))
+```
+
+
+## Density of BrDU+ cells
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Dens_BrDU ~ Condition * Layer + (1 | Mouse), family = Gamma("log"), data = data, REML = TRUE),
+  glmmTMB(Dens_BrDU ~ Condition * Layer + (1 | Mouse), family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```

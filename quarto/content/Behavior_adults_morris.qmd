@@ -1,0 +1,146 @@
+# Behavior [Adults] (Morris)
+
+```{r}
+#| echo: false
+#| output: false
+
+source(here::here("src", "init.R"), echo = FALSE)
+```
+
+```{r}
+#| echo: false
+
+responses <- c("Path_Efficiency", "Latency_Plat", "Freezing")
+predictors <- c("Condition", "Stage")
+
+data <- load_behavior_adults(config$data$behavior_adults_path, sheet = "Behavior") |> 
+  mutate(
+    across(c("Session", "Stage"), \(col) as.factor(col)),
+    across(all_of(responses), \(col) as.numeric(col)),
+    across(c("Freezing"), \(.x) .x = ifelse(.x == 0, 0.01, .x)) # To be able to fit the Gamma
+  )
+
+Path_Efficiency_name <- "Path Efficiency"
+Latency_Plat_name <- "Latency to Platform *(s)*"
+Freezing_name <- "Freezing *(s)*"
+
+contrasts(data$Condition) <- contr.sum
+contrasts(data$Stage) <- contr.sum
+```
+
+❖ **Data**
+
+```{r}
+#| echo: false
+
+n_samp <- 15
+
+kable_html(data |> head(n_samp))
+```
+
+(*Sample of `r n_samp` data points*)
+
+❖ **Correlations**
+
+```{r}
+#| echo: false
+#| fig.width: 8
+
+corr_matrix_plot(data, vars = c(c(predictors, "Mouse"), responses))
+```
+
+
+## Path Efficiency
+
+```{r}
+#| echo: false
+
+is_temporal <- TRUE
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(
+    Path_Efficiency ~ Condition * Stage + ar1(Stage + 0 | Mouse),
+    data = data,
+    family = beta_family("logit"),
+    REML = TRUE
+  ),
+  glmmTMB(
+    Path_Efficiency ~ Condition * Stage + (Stage || Mouse),
+    data = data,
+    family = beta_family("logit"),
+    REML = TRUE
+  )
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Latency to Platform
+
+```{r}
+#| echo: false
+
+is_temporal <- TRUE
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(
+    Latency_Plat ~ Condition * Stage + ar1(Stage + 0 | Mouse),
+    data = data,
+    family = Gamma("log"),
+    REML = TRUE
+  ), 
+  glmmTMB(
+    Latency_Plat ~ Condition * Stage + (Stage || Mouse),
+    data = data,
+    family = Gamma("log"),
+    REML = TRUE
+  )
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Freezing Time:
+
+```{r}
+#| echo: false
+
+is_temporal <- TRUE
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(
+    Freezing ~ Condition * Stage + ar1(Stage + 0 | Mouse),
+    data = data,
+    family = Gamma("log"),
+    REML = TRUE
+  ), 
+  glmmTMB(
+    Freezing ~ Condition * Stage + (Stage || Mouse),
+    data = data,
+    family = Gamma("log"),
+    REML = TRUE
+  )
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```

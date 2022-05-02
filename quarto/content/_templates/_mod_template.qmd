@@ -1,0 +1,150 @@
+```{r}
+#| echo: false
+#| output: false
+
+source(here::here("src", "init.R"), echo = FALSE)
+
+is_count <- ifelse(insight::get_family(mod)$family |> str_detect("binom|poiss"), TRUE, FALSE)
+
+current_preds <- insight::find_predictors(mod)$conditional
+```
+
+#### `r get_model_family(mod)`
+
+❖ **Model call:**
+
+```{r}
+#| echo: false
+
+print_model_call(mod)
+```
+
+❖ **Performance:**
+
+```{r}
+#| echo: false
+#| output: false
+
+perfs <- performance::performance(mod, verbose = FALSE) |> print_html()
+```
+
+```{r}
+#| eval: false
+
+performance::performance(mod)
+```
+
+```{r}
+#| echo: false
+
+perfs
+```
+
+❖ **Residuals:**
+
+```{r}
+#| fig.width: 7
+#| layout-ncol: 1
+
+performance::check_model(
+  mod, panel = FALSE,
+  check = c("pp_check", "qq", "reqq", "normality", "linearity", "homogeneity")
+)
+```
+
+```{r}
+#| echo: false
+#| fig.width: 8
+
+make_acf_plot(mod)
+```
+
+```{r eval = is_count, echo = is_count}
+performance::check_overdispersion(mod)
+```
+
+```{r eval = is_count, echo = is_count}
+performance::check_zeroinflation(mod)
+```
+
+❖ **Predictions:**
+
+:::{.callout-note}
+Simulating data from the model for pseudo "Posterior Predictive" plots.
+:::
+
+```{r}
+#| echo: false
+
+mod_dharma <- DHARMa::simulateResiduals(mod, n = 100, plot = FALSE)
+mod_dharma_t <- t(mod_dharma$simulatedResponse)
+```
+
+♦ Simulated data vs observed data:
+
+```{r}
+#| echo: false
+#| results: asis
+
+purrr::map(
+  current_preds,
+  \(p) {
+    n_unique <- n_distinct(insight::get_data(mod)[[p]])
+
+    max_cols_per_plot <- 3
+    n_rows_in_group <- ceiling(n_unique / max_cols_per_plot)
+    n_cols_in_group <- ifelse(n_unique <= max_cols_per_plot, n_unique, max_cols_per_plot)
+
+    n_cols <- 1 # Fixed, only one column for those plots, for visibility
+    n_rows <- ifelse(is_count, 3, 2) # Number of plots (since there is one per row) -> 3 for counts, 2 otherwise
+
+    plot <- ppc_plots(mod, mod_dharma_t, term = p, max_cols_per_plot = max_cols_per_plot)
+    
+    fig_title <- "Simulation-based Posterior Predictive Checks"
+    height <- 3 + ifelse(is_count, 2 + 2 * (n_rows - 1) * n_rows_in_group, 2 * n_rows * n_rows_in_group)
+    width <- 1 + 2 * n_cols * n_cols_in_group + 1.5
+    knitr::knit_child(config$templates$plot, quiet = TRUE, envir = new.env(parent = environment()))
+  }
+) |> unlist() |> cat(sep = '\n')
+```
+
+♦ Simulated statistics vs observed ones:
+
+```{r}
+#| echo: false
+#| results: asis
+
+purrr::map(
+  current_preds, 
+  \(p) {
+    n_unique <- n_distinct(insight::get_data(mod)[[p]])
+    stats <- c("min", "max", "mean", "sd")
+    max_cols_per_plot <- 5
+    n_rows_in_group <- ceiling(n_unique / max_cols_per_plot)
+    n_cols_in_group <- ifelse(n_unique <= max_cols_per_plot, n_unique, max_cols_per_plot) # n_unique ???
+    
+    n_cols <- ifelse(n_unique > 3, 1, 2) # Spread each "grouped" plot on a row is there are more than 3 plots inside it
+    n_rows <- ceiling(length(stats) / n_cols)
+    
+    plot <- ppc_stat_plots(mod, mod_dharma_t, term = p, stats = stats, n_cols = n_cols, max_cols_per_plot = max_cols_per_plot)
+    
+    height <- 3 + (2 * n_rows * n_rows_in_group)
+    width <- 1 + 2 * n_cols * n_cols_in_group + n_cols # For the legends on the right
+    knitr::knit_child(config$templates$plot, quiet = TRUE, envir = new.env(parent = environment()))
+  }
+) |> unlist() |> cat(sep = '\n')
+```
+
+❖ **Potential outliers:**
+
+```{r}
+#| echo: false
+
+outliers <- insight::get_data(mod) |> rownames_to_column("ID") |> filter(ID %in% DHARMa::outliers(mod_dharma))
+
+if (nrow(outliers) >= 1) {
+  print_html(outliers)
+} else {
+  cat("No potential outliers detected by the model.")
+}
+```

@@ -1,0 +1,70 @@
+# Behavior [Teens]
+
+```{r}
+#| echo: false
+#| output: false
+
+source(here::here("src", "init.R"), echo = FALSE)
+```
+
+```{r}
+#| echo: false
+
+responses <- c("Grip_Strength")
+predictors <- c("Condition")
+
+data <- load_behavior_teens(config$data$behavior_teens_path)
+
+data_agg <- (data 
+  |> group_by(Mouse, Condition) 
+  |> summarize(across(responses, .fns = \(.x) mean(.x, na.rm = T))) 
+  |> ungroup() 
+  |> mutate(dCondition = as.numeric(Condition == "IH")) 
+  |> rowid_to_column("ID")
+)
+
+Grip_Strength_name <- "Grip Strength *(g)*"
+
+contrasts(data$Condition) <- contr.treatment
+```
+
+❖ **Data**
+
+```{r}
+#| echo: false
+
+n_samp <- 15
+
+kable_html(data |> head(n_samp))
+```
+
+(*Sample of `r n_samp` data points*)
+
+❖ **Correlations**
+
+```{r}
+#| echo: false
+#| fig.width: 8
+
+corr_matrix_plot(data, vars = c(c(predictors, "Mouse"), responses))
+```
+
+
+## Grip Strength
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Grip_Strength ~ Condition + (1 | Mouse), family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(Grip_Strength ~ Condition + (1 | Mouse), family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
