@@ -16,7 +16,7 @@ Data and R companion code for (Leroux S., Rodriguez-Duboc A., Arabo A., Basille-
 
 - **Paper:** *In Press*  
 
-- **Code:** Marc-Aurèle Rivière, & Agalic Rodriguez-Duboc. (2022). ma-riviere/LT-AoP-22: (V1.1.0). Zenodo. https://doi.org/10.5281/zenodo.6480947
+- **Code:** Marc-Aurèle Rivière, & Agalic Rodriguez-Duboc. (2022). ma-riviere/LT-AoP-22: public release (v1.1). Zenodo. https://doi.org/10.5281/zenodo.6480947
 
 ## ❔ Requirements:
 
