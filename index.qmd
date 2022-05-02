@@ -16,7 +16,7 @@ Each of the files listed in the navigation bar (left side of the screen) contain
 
 :::{.column-margin}
 :::{.callout-tip appearance="simple"}
-Each candidate model is split into its own tab.
+Each candidate model is split in its own tab.
 :::
 :::
 
@@ -32,7 +32,7 @@ We chose to (sometimes) display several candidate models for each variable of in
 
 :::{.column-margin}
 :::{.callout-tip appearance="simple"}
-Each variable's is split into its own tab.
+Each variable is split in its own tab.
 :::
 :::
 
