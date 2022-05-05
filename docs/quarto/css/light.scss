@@ -1,0 +1,12 @@
+/*-- scss:defaults --*/
+
+/*-- scss:rules --*/
+$main: #2d2d77;
+$hover: #0d6efd;
+
+.light-mode { display: block; }
+.dark-mode { display: none; }
+
+/* Coloring section headers */
+.sidebar-item.sidebar-item-section > div.sidebar-item-container > a.sidebar-item-text { color: $main; font-weight: bold; }
+.sidebar-item.sidebar-item-section > div.sidebar-item-container > a.sidebar-item-text:hover { color: $hover; font-weight: bold; }

@@ -2,7 +2,7 @@ project:
   type: book
   pre-render: src/setup.R
   output-dir: "docs"
-  resources: [.nojekyll]
+  resources: [.nojekyll, quarto/css/*.scss]
 
 book:
   title: "Intermittent hypoxia and cerebellar development"
