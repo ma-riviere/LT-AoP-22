@@ -48,11 +48,12 @@ project_pkgs <- c(
   "see",
   "ggdist",
   "bayesplot",
-  "GGally",
 
   ### Reporting
   "gt",
   "quarto",
+  "downlit", # For code linking
+  "xml2", # For code linking
   
   ### Misc
   "glue", 

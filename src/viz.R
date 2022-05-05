@@ -2,47 +2,6 @@
 #### Visualizations ####
 #======================#
 
-# kable_html <- function(data, .type = "html") {
-#   return(
-#     knitr::kable(
-#       data, 
-#       format = .type,
-#       col.names = gsub("[.]", " ", names(data)), 
-#       booktabs = TRUE, 
-#       align = "c", 
-#       digits = 3, 
-#       format.args = list(big.mark = ",", scientific = FALSE), 
-#       escape = FALSE, 
-#       linesep = c("")
-#     ) 
-#     |> kableExtra::kable_styling(
-#       font_size = 15, 
-#       latex_options = c("striped", "scale_down", "hold_position"), 
-#       bootstrap_options = c("striped", "condensed", "responsive"), 
-#       position = "center",
-#       full_width = TRUE
-#     ) 
-#     |> kableExtra::row_spec(0, font_size = 18, background = "#d4dbde", bold = T, color = "#2b4894")
-#   )
-# }
-
-format_gt <- function(gt_tbl) {
-  
-  gt_tbl <- gt::fmt(
-    gt_tbl,
-    columns = select(gt_tbl[["_data"]], matches("p.val|^pr|pr\\(.*\\)|^p$")) |> colnames(),
-    fns = \(x) purrr::map_chr(x, \(v) ifelse(!is.na(v) && utils::type.convert(v, as.is = TRUE) |> is.numeric(), format_pvalue(as.numeric(v)), v))
-  )
-  
-  gt_tbl <- gt::fmt_number(
-    gt_tbl,
-    columns = select(gt_tbl[["_data"]], where(\(v) is.numeric(v))) |> colnames(),
-    decimals = 3, drop_trailing_zeros = TRUE
-  )
-  
-  return(gt::opt_row_striping(gt_tbl))
-}
-
 #-----------#
 #### EDA ####
 #-----------#
@@ -89,12 +48,11 @@ hist_plot <- function(.df, var, facet = "Condition", facet2 = NULL, resp_name = 
     theme(
       legend.position = "none", 
       axis.title.y = element_blank(), 
-      axis.title.x = element_markdown(face = "bold", hjust = 0.5),
       axis.text.y = element_blank()
     ) +
     labs(
       x = resp_name, 
-      y = "Frequency",
+      y = "",
       title = .title,
       subtitle = .subtitle
     )

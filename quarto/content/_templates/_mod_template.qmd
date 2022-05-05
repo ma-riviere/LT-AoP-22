@@ -57,7 +57,6 @@ performance::check_model(
 ```{r}
 #| echo: false
 #| output: asis
-#| layout-ncol: 1
 #| fig.width: 8
 
 (performance::check_model(mod, check = c("pp_check")) |> plot())[[1]] + 
@@ -67,7 +66,6 @@ performance::check_model(
 ```{r}
 #| echo: false
 #| output: asis
-#| layout-ncol: 1
 #| fig.width: 8
 
 (performance::check_model(mod, check = c("qq")) |> plot())[[1]] + theme_light_mar
@@ -76,7 +74,6 @@ performance::check_model(
 ```{r}
 #| echo: false
 #| output: asis
-#| layout-ncol: 1
 #| fig.width: 8
 
 (performance::check_model(mod, check = c("homogeneity")) |> plot())[[1]] + theme_light_mar + labs(y = "sqrt( |Std. residuals| )")
@@ -86,16 +83,15 @@ performance::check_model(
 #| echo: false
 #| eval: !expr has_re
 #| output: asis
-#| layout-ncol: 1
 #| fig.width: 8
 
-(performance::check_model(mod, check = c("reqq")) |> plot())[[1]] + theme_light_mar
+(performance::check_model(mod, check = c("reqq")) |> plot())[[1]] + 
+  theme_light_mar + theme(axis.text.x = element_blank(), axis.text.y = element_blank())
 ```
 
 ```{r}
 #| echo: false
 #| output: asis
-#| layout-ncol: 1
 #| fig.width: 8
 
 make_acf_plot(mod)
