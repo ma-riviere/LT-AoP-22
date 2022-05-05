@@ -1,3 +1,4 @@
+/* Fira code font for code blocks */
 @import url(https://cdn.jsdelivr.net/npm/firacode@6.2.0/distr/fira_code.css);
 
 code { font-family: 'Fira Code', monospace; }
@@ -7,5 +8,5 @@ code { font-family: 'Fira Code', monospace; }
 }
 
 hr {
-  border-top: 7px double #2b2b57;
+  border-top: 8px double;
 }

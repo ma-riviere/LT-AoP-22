@@ -1,0 +1,14 @@
+/*-- scss:defaults --*/
+
+/*-- scss:rules --*/
+$main: #207c61;
+$hover: #20c997;
+
+.dark-mode { display: block; }
+.light-mode { display: none; }
+
+.sidebar-item.sidebar-item-section > div.sidebar-item-container > a.sidebar-item-text { color: $main; font-weight: bold; }
+.sidebar-item.sidebar-item-section > div.sidebar-item-container > a.sidebar-item-text:hover { color: $hover; font-weight: bold; }
+
+div.panel-tabset li.nav-item > a.nav-link:not(.active) {color: $hover;}
+div.panel-tabset li.nav-item > a.nav-link:not(.active):hover {color: $main;}

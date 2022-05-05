@@ -2,28 +2,45 @@
 #### Visualizations ####
 #======================#
 
-kable_html <- function(data, .type = "html") {
-  return(
-    knitr::kable(
-      data, 
-      format = .type,
-      col.names = gsub("[.]", " ", names(data)), 
-      booktabs = TRUE, 
-      align = "c", 
-      digits = 3, 
-      format.args = list(big.mark = ",", scientific = FALSE), 
-      escape = FALSE, 
-      linesep = c("")
-    ) 
-    |> kableExtra::kable_styling(
-      font_size = 15, 
-      latex_options = c("striped", "scale_down", "hold_position"), 
-      bootstrap_options = c("striped", "condensed", "responsive"), 
-      position = "center",
-      full_width = TRUE
-    ) 
-    |> kableExtra::row_spec(0, font_size = 18, background = "#d4dbde", bold = T, color = "#2b4894")
+# kable_html <- function(data, .type = "html") {
+#   return(
+#     knitr::kable(
+#       data, 
+#       format = .type,
+#       col.names = gsub("[.]", " ", names(data)), 
+#       booktabs = TRUE, 
+#       align = "c", 
+#       digits = 3, 
+#       format.args = list(big.mark = ",", scientific = FALSE), 
+#       escape = FALSE, 
+#       linesep = c("")
+#     ) 
+#     |> kableExtra::kable_styling(
+#       font_size = 15, 
+#       latex_options = c("striped", "scale_down", "hold_position"), 
+#       bootstrap_options = c("striped", "condensed", "responsive"), 
+#       position = "center",
+#       full_width = TRUE
+#     ) 
+#     |> kableExtra::row_spec(0, font_size = 18, background = "#d4dbde", bold = T, color = "#2b4894")
+#   )
+# }
+
+format_gt <- function(gt_tbl) {
+  
+  gt_tbl <- gt::fmt(
+    gt_tbl,
+    columns = select(gt_tbl[["_data"]], matches("p.val|^pr|pr\\(.*\\)|^p$")) |> colnames(),
+    fns = \(x) purrr::map_chr(x, \(v) ifelse(!is.na(v) && utils::type.convert(v, as.is = TRUE) |> is.numeric(), format_pvalue(as.numeric(v)), v))
   )
+  
+  gt_tbl <- gt::fmt_number(
+    gt_tbl,
+    columns = select(gt_tbl[["_data"]], where(\(v) is.numeric(v))) |> colnames(),
+    decimals = 3, drop_trailing_zeros = TRUE
+  )
+  
+  return(gt::opt_row_striping(gt_tbl))
 }
 
 #-----------#
@@ -47,7 +64,7 @@ corr_matrix_plot <- function(df, vars) {
     scale_x_discrete(position = "top") +
     scale_y_discrete(limits = rev) +
     guides(fill = guide_colourbar(title = "R", barheight = rel(17), title.hjust = 0.15), colour = "none") +
-    labs(title = "Correlation Matrix") +
+    labs(title = "Correlation Matrix", x = "", y = "") +
     theme(
       plot.title = element_markdown(hjust = 0.5),
       axis.title.x = element_blank(),
@@ -211,9 +228,7 @@ make_acf_plot <- function(mod) {
     labs(
       title = "Autocorrelation of residuals",
       subtitle = "Data (lines) should be inside the dashed area"
-    ) + 
-    see::theme_lucid() +
-    theme(title = element_text(size = 16))
+    )
 }
 
 
@@ -335,7 +350,7 @@ make_signif_boxplot <- function(
     mutate(
       x1 = match(X1, levels(dat[[xaxis]])),
       x2 = match(X2, levels(dat[[xaxis]])),
-      p.signif = glue("{scales::pvalue(p.value)} {gtools::stars.pval(p.value)}")
+      p.signif = format_pvalue(p.value)
     ) |>
     arrange(x.diff := abs(x2 - x1)) |>
     mutate(
@@ -348,18 +363,18 @@ make_signif_boxplot <- function(
   # -----------[ Plot ]----------- #
   
   plot <- (ggplot(dat, aes(x = .data[[xaxis]], y = .data[[resp]], color = .data[[xaxis]]))
-    + geom_boxplot(outlier.alpha = 0, size = 1.1)
+    + geom_boxplot(outlier.alpha = 0, size = 1.1, fill = NA)
     + stat_summary(fun = mean, geom = "errorbar", aes(ymax = ..y.., ymin = ..y..), width = 0.75, size = 1.1, linetype = "dotted")
     + geom_jitter(size = 2, width = 0.1, alpha = 0.6)
     + geom_errorbarh(
       data = p_data_contrasts, aes(xmin = x1, xmax = x2, y = pos.y), inherit.aes = FALSE, 
-      color = "black", height = 0.03 * amp, size = 0.5
+      color = color_text_bi, height = 0.03 * amp, size = 0.5
     )
     + geom_text(
       data = p_data_contrasts, aes(x = pos.x, y = pos.y, label = p.signif), inherit.aes = FALSE,
-      size = 5, color = "black", fontface = "bold", vjust = 0, hjust = 0.5, position = position_nudge(y = 0.02 * amp)
+      size = 5, color = color_text_bi, fontface = "bold", vjust = 0, hjust = 0.5, position = position_nudge(y = 0.02 * amp)
     )
-    + geom_label(aes(y = min - 0.05 * amp, fontface = "bold", label = N, color = .data[[xaxis]]), size = 5, alpha = 0.7)
+    + geom_label(aes(y = min - 0.05 * amp, fontface = "bold", label = N, color = .data[[xaxis]]), fill = NA, size = 5, alpha = 0.7)
     + theme(
       legend.position = "none", 
       panel.grid.major = element_blank(), 
@@ -443,7 +458,7 @@ make_signif_boxplot_inter <- function(
     mutate(
       x1 = (match(.data[[facet]], levels(dat[[facet]])) - 1) * length(unique(dat[[xaxis]])) + match(X1, levels(dat[[xaxis]])),
       x2 = (match(.data[[facet]], levels(dat[[facet]])) - 1) * length(unique(dat[[xaxis]])) + match(X2, levels(dat[[xaxis]])),
-      p.signif = glue("{scales::pvalue(p.value)} {gtools::stars.pval(p.value)}")
+      p.signif = format_pvalue(p.value)
     ) |>
     arrange(x.diff := abs(x2 - x1)) |>
     mutate(
@@ -464,7 +479,7 @@ make_signif_boxplot_inter <- function(
                     (match(F1, levels(dat[[facet]])) - 1) * length(unique(dat[[xaxis]])) + match(X2, levels(dat[[xaxis]]))),
       x2 = 0.5 * ((match(F2, levels(dat[[facet]])) - 1) * length(unique(dat[[xaxis]])) + match(X1, levels(dat[[xaxis]])) +
                     (match(F2, levels(dat[[facet]])) - 1) * length(unique(dat[[xaxis]])) + match(X2, levels(dat[[xaxis]]))),
-      p.signif = glue("{scales::pvalue(p.value)} {gtools::stars.pval(p.value)}")
+      p.signif = format_pvalue(p.value)
     ) |>
     arrange(x.diff := abs(x2 - x1)) |>
     mutate(
@@ -476,26 +491,26 @@ make_signif_boxplot_inter <- function(
   # -----------[ Plot ]----------- #
   
   plot <- (ggplot(dat, aes(x = interaction(.data[[xaxis]], .data[[facet]], sep = "_"), y = .data[[resp]], color = .data[[xaxis]]))
-    + geom_boxplot(outlier.alpha = 0, size = 1.1)
+    + geom_boxplot(outlier.alpha = 0, size = 1.1, fill = NA)
     + stat_summary(fun = mean, geom = "errorbar", aes(ymax = ..y.., ymin = ..y..), width = 0.75, size = 1.1, linetype = "dotted")
     + geom_jitter(size = 2, width = 0.1, alpha = 0.6)
     + geom_errorbarh(
       data = p_data_contrasts, aes(xmin = paste(X1, .data[[facet]], sep = "_"), xmax = paste(X2, .data[[facet]], sep = "_"), y = pos.y), inherit.aes = FALSE,
-      color = "black", height = 0.02 * amp, size = 0.5
+      color = color_text_bi, height = 0.02 * amp, size = 0.5
     )
     + geom_text(
       data = p_data_contrasts, aes(x = pos.x, y = pos.y, label = p.signif), inherit.aes = FALSE,
-      size = 5, color = "black", fontface = "bold", vjust = 0, hjust = 0.5, position = position_nudge(y = 0.02 * amp)
+      size = 5, color = color_text_bi, fontface = "bold", vjust = 0, hjust = 0.5, position = position_nudge(y = 0.02 * amp)
     )
-    + geom_label(aes(y = min - 0.05 * amp, fontface = "bold", label = N, color = .data[[xaxis]]), size = 5, alpha = 0.7)
+    + geom_label(aes(y = min - 0.05 * amp, fontface = "bold", label = N, color = .data[[xaxis]]), fill = NA, size = 5, alpha = 0.7)
     ## Interactions
     + geom_errorbarh(
       data = p_data_interactions, aes(xmin = x1, xmax = x2, y = pos.y), inherit.aes = FALSE,
-      color = "black", height = 0.02 * amp, size = 0.5
+      color = color_text_bi, height = 0.02 * amp, size = 0.5
     )
     + geom_text(
       data = p_data_interactions, aes(x = pos.x, y = pos.y, label = p.signif), inherit.aes = FALSE,
-      size = 5, color = "black", fontface = "bold", vjust = 0, hjust = 0.5, position = position_nudge(y = 0.02 * amp)
+      size = 5, color = color_text_bi, fontface = "bold", vjust = 0, hjust = 0.5, position = position_nudge(y = 0.02 * amp)
     )
     + theme(
       legend.position = "none",
@@ -503,7 +518,7 @@ make_signif_boxplot_inter <- function(
       # axis.text.x = element_blank(),
       axis.title.y = ggtext::element_markdown()
     )
-    + labs(y = resp_name)
+    + labs(y = resp_name, x = glue::glue("{xaxis} per {facet}"))
     + scale_x_discrete(labels = \(l) str_replace(l, "_", "\n") |> str_replace("^H", "IH"))
   )
   
@@ -577,17 +592,17 @@ modeled_temporal_plot <- function(
   UCL_name <- purrr::keep(colnames(emmeans), grepl(pattern = "UCL|upper", x = colnames(emmeans)))
   
   p_data <- (left_join(
-    emmeans |> select({{ time }}, {{ treatment }}, any_of(c("Observed")), Modeled, matches("CL$")),
-    contrasts |> select({{ time }}, contrast, p.value),
-    by = time
-  ) 
-  |> group_by(.data[[time]]) 
-  |> summarize(
-    pos.y = 1.1 * max(.data[[UCL_name]]),
-    p.value = mean(p.value)
-  ) 
-  |> ungroup() 
-  |> mutate(p.signif = ifelse(p.value > alpha, NA_character_, glue("{scales::pvalue(p.value)}  \n {gtools::stars.pval(p.value)}")))
+      emmeans |> select({{ time }}, {{ treatment }}, any_of(c("Observed")), Modeled, matches("CL$")),
+      contrasts |> select({{ time }}, contrast, p.value),
+      by = time
+    ) 
+    |> group_by(.data[[time]]) 
+    |> summarize(
+      pos.y = 1.1 * max(.data[[UCL_name]]),
+      p.value = mean(p.value)
+    ) 
+    |> ungroup() 
+    |> mutate(p.signif = ifelse(p.value > alpha, NA_character_, glue::glue("{scales::pvalue(p.value)}  \n {gtools::stars.pval(p.value)}")))
   )
   
   plot <- (ggplot(emmeans, aes_string(x = time, y = "Modeled", color = treatment))
@@ -599,7 +614,7 @@ modeled_temporal_plot <- function(
              data = p_data,
              aes_string(label = "p.signif", x = time, y = "pos.y"),
              vjust = 0.5, hjust = 0.5,
-             size = 5, color = "black"
+             size = 5, color = color_text_bi
            )
            + labs(y = resp_name %||% get_response_name(resp))
            + theme(

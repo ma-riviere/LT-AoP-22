@@ -23,7 +23,7 @@ data <- (
   purrr::reduce(
     .x = purrr::map(
       c("Percent Morris", "Actimetry", "Beam", "Openfield", "Plus Maze"), 
-      .f = \(sheet) load_behavior_adults(config$data$behavior_adults_path, sheet = sheet)
+      .f = \(sheet) load_behavior_adults(config$data$behavior_adults_path, sheet = sheet) |> select(-Stage)
     ),
     .f = \(acc, df) inner_join(acc, df, by = c("Mouse", "Condition"))
   ) 
@@ -61,10 +61,11 @@ contrasts(data$Condition) <- contr.treatment
 
 ```{r}
 #| echo: false
+#| output: asis
 
 n_samp <- 15
 
-kable_html(data |> head(n_samp))
+gt(data |> head(n_samp))
 ```
 
 (*Sample of `r n_samp` data points*)
@@ -73,6 +74,7 @@ kable_html(data |> head(n_samp))
 
 ```{r}
 #| echo: false
+#| output: asis
 #| fig.width: 8
 
 corr_matrix_plot(data, vars = c(predictors, responses))

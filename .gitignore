@@ -49,9 +49,10 @@ rsconnect/
 
 /.quarto/
 _freeze/
-
+site_libs/
 quarto/*_files/
 quarto/content/*_files/
+quarto/content/*.html
 fig/_images
 fig/_layout
 analysis/_Layouts.*

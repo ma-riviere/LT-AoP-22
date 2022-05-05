@@ -33,6 +33,7 @@ contrasts(data$Z) <- contr.sum
 
 ```{r}
 #| fig.width: 8
+#| output: asis
 
 compositional_plot(data, responses, prefix = c("Area", "Count", "Colocalization"))
 ```

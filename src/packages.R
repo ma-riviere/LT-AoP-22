@@ -35,6 +35,7 @@ project_pkgs <- c(
   "easystats/insight",
   "easystats/datawizard",
   "performance",
+  "qqplotr", # Required by performance
   "correlation",
   "easystats/parameters",
   "DHARMa",

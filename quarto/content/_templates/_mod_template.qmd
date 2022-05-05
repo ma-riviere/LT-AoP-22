@@ -4,7 +4,9 @@
 
 source(here::here("src", "init.R"), echo = FALSE)
 
-is_count <- ifelse(insight::get_family(mod)$family |> str_detect("binom|poiss"), TRUE, FALSE)
+is_count <- ifelse(insight::get_family(mod)$family |> str_detect("binom|pois"), TRUE, FALSE)
+has_re <- !is.null(insight::find_random(mod))
+has_zeroes <- 0 %in% insight::get_response(mod)
 
 current_preds <- insight::find_predictors(mod)$conditional
 ```
@@ -25,7 +27,7 @@ print_model_call(mod)
 #| echo: false
 #| output: false
 
-perfs <- performance::performance(mod, verbose = FALSE) |> print_html()
+perfs <- performance::performance(mod, verbose = FALSE)
 ```
 
 ```{r}
@@ -36,34 +38,80 @@ performance::performance(mod)
 
 ```{r}
 #| echo: false
+#| output: asis
 
-perfs
+print_html(perfs)
 ```
 
 ❖ **Residuals:**
 
 ```{r}
-#| fig.width: 7
-#| layout-ncol: 1
+#| eval: false
 
 performance::check_model(
   mod, panel = FALSE,
-  check = c("pp_check", "qq", "reqq", "normality", "linearity", "homogeneity")
+  check = c("pp_check", "qq", "reqq", "linearity", "homogeneity")
 )
 ```
 
 ```{r}
 #| echo: false
+#| output: asis
+#| layout-ncol: 1
+#| fig.width: 8
+
+(performance::check_model(mod, check = c("pp_check")) |> plot())[[1]] + 
+  theme_light_mar + theme(legend.position = "bottom") + labs(x = get_response_name(insight::find_response(mod)))
+```
+
+```{r}
+#| echo: false
+#| output: asis
+#| layout-ncol: 1
+#| fig.width: 8
+
+(performance::check_model(mod, check = c("qq")) |> plot())[[1]] + theme_light_mar
+```
+
+```{r}
+#| echo: false
+#| output: asis
+#| layout-ncol: 1
+#| fig.width: 8
+
+(performance::check_model(mod, check = c("homogeneity")) |> plot())[[1]] + theme_light_mar + labs(y = "sqrt( |Std. residuals| )")
+```
+
+```{r}
+#| echo: false
+#| eval: !expr has_re
+#| output: asis
+#| layout-ncol: 1
+#| fig.width: 8
+
+(performance::check_model(mod, check = c("reqq")) |> plot())[[1]] + theme_light_mar
+```
+
+```{r}
+#| echo: false
+#| output: asis
+#| layout-ncol: 1
 #| fig.width: 8
 
 make_acf_plot(mod)
 ```
 
-```{r eval = is_count, echo = is_count}
+```{r}
+#| eval: !expr is_count
+#| echo: !expr is_count
+
 performance::check_overdispersion(mod)
 ```
 
-```{r eval = is_count, echo = is_count}
+```{r}
+#| eval: !expr (is_count && has_zeroes)
+#| echo: !expr (is_count && has_zeroes)
+
 performance::check_zeroinflation(mod)
 ```
 
@@ -84,7 +132,7 @@ mod_dharma_t <- t(mod_dharma$simulatedResponse)
 
 ```{r}
 #| echo: false
-#| results: asis
+#| output: asis
 
 purrr::map(
   current_preds,
@@ -98,12 +146,13 @@ purrr::map(
     n_cols <- 1 # Fixed, only one column for those plots, for visibility
     n_rows <- ifelse(is_count, 3, 2) # Number of plots (since there is one per row) -> 3 for counts, 2 otherwise
 
+    bayesplot::color_scheme_set("mix-teal-brightblue")
     plot <- ppc_plots(mod, mod_dharma_t, term = p, max_cols_per_plot = max_cols_per_plot)
-    
+
     fig_title <- "Simulation-based Posterior Predictive Checks"
     height <- 3 + ifelse(is_count, 2 + 2 * (n_rows - 1) * n_rows_in_group, 2 * n_rows * n_rows_in_group)
     width <- 1 + 2 * n_cols * n_cols_in_group + 1.5
-    knitr::knit_child(config$templates$plot, quiet = TRUE, envir = new.env(parent = environment()))
+    knitr::knit_child(config$templates$plot, envir = new.env(parent = environment()))
   }
 ) |> unlist() |> cat(sep = '\n')
 ```
@@ -112,7 +161,7 @@ purrr::map(
 
 ```{r}
 #| echo: false
-#| results: asis
+#| output: asis
 
 purrr::map(
   current_preds, 
@@ -126,6 +175,7 @@ purrr::map(
     n_cols <- ifelse(n_unique > 3, 1, 2) # Spread each "grouped" plot on a row is there are more than 3 plots inside it
     n_rows <- ceiling(length(stats) / n_cols)
     
+    bayesplot::color_scheme_set("mix-brightblue-teal")
     plot <- ppc_stat_plots(mod, mod_dharma_t, term = p, stats = stats, n_cols = n_cols, max_cols_per_plot = max_cols_per_plot)
     
     height <- 3 + (2 * n_rows * n_rows_in_group)
@@ -139,6 +189,7 @@ purrr::map(
 
 ```{r}
 #| echo: false
+#| output: asis
 
 outliers <- insight::get_data(mod) |> rownames_to_column("ID") |> filter(ID %in% DHARMa::outliers(mod_dharma))
 

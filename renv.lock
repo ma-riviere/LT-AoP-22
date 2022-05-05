@@ -1238,6 +1238,12 @@
       "Hash": "e3bd5ade848251657381d2a0668def59",
       "Requirements": []
     },
+    "qqplotr": {
+      "Package": "qqplotr",
+      "Version": "0.0.5",
+      "Source": "Repository",
+      "Requirements": []
+    },
     "quadprog": {
       "Package": "quadprog",
       "Version": "1.5-8",

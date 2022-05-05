@@ -43,10 +43,11 @@ Fluo_Norm_name <- "Enzymatic Activity of Caspase 3/7  \n *(Normalized Fluorescen
 
 ```{r}
 #| echo: false
+#| output: asis
 
 n_samp <- 15
 
-kable_html(data |> head(n_samp))
+gt(data |> head(n_samp))
 ```
 
 (*Sample of `r n_samp` data points*)
@@ -55,6 +56,7 @@ kable_html(data |> head(n_samp))
 
 ```{r}
 #| echo: false
+#| output: asis
 #| fig.width: 8
 
 corr_matrix_plot(data, vars = c(c(predictors, "Mouse"), responses))

@@ -83,8 +83,8 @@ book:
 format:
   html:
     theme:
-      light: default
-      dark: superhero
+      light: [default, quarto/css/light.scss]
+      dark: [darkly, quarto/css/dark.scss]
     css: quarto/css/style.css
     toc: true
     toc-title: "On this page"

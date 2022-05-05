@@ -28,8 +28,8 @@ knitr::opts_chunk$set(
   fig.align = "center",
   fig.retina = 2,
   dpi = 300,
-  dev = 'svg'
-  # dev.args = list(bg = "transparent")
+  dev = 'svg',
+  dev.args = list(bg = "transparent")
 )
 
 dpi_save_png <- knitr::opts_chunk$get("dpi")

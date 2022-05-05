@@ -19,15 +19,16 @@ if (is_temporal) effects_template_path <- config$templates$effects_temporal
 
 ```{r}
 #| echo: false
+#| output: asis
 
 dist_data <- distribution_summary(data, dvs = current_response, between = current_predictor_set) |> select(-Variable)
 
-gt::gt(dist_data, auto_align = TRUE) |> 
-  gt::fmt_number(columns = select(dist_data, where(\(v) is.numeric(v))) |> colnames(), decimals = 3, drop_trailing_zeros = TRUE)
+gt::gt(dist_data) |> format_gt()
 ```
 
 ```{r}
 #| echo: false
+#| output: asis
 
 hist_height <- 5
 
@@ -36,6 +37,7 @@ if(!is.null(pred2)) hist_height <- 4 + n_distinct(data[[pred2]])
 
 ```{r}
 #| echo: false
+#| output: asis
 #| fig.width: 8
 #| fig.height: !expr hist_height
 
@@ -55,6 +57,7 @@ cat("♦ Evolution:")
 ```{r}
 #| eval: !expr is_temporal
 #| echo: false
+#| output: asis
 #| fig.width: 10
 #| fig.height: 8
 
@@ -97,11 +100,12 @@ mod_agg <- afex::mixed(
 ```{r}
 #| eval: !expr (!is_temporal)
 #| echo: false
+#| output: asis
 
 parameters::parameters(
   mod_agg$full_model, effects = "fixed", 
   ci_method = "satterthwaite", drop = "Intercept"
-) |> print_html()
+) |> print_html() |> tab_header(title = NULL)
 ```
 
 
@@ -113,7 +117,7 @@ Exploring candidate models:
 
 ```{r}
 #| echo: false
-#| results: asis
+#| output: asis
 
 purrr::map(
   seq(1, length(models)),
@@ -156,7 +160,7 @@ print_model_call(mod)
 #| output: false
 
 all_effects <- parameters::parameters(
-  mod, exponentiate = should_exp(mod), 
+  mod, exponentiate = should_exp(mod), component = "conditional",
   p_adjust = "none", summary = TRUE, digits = 3
 )
 ```
@@ -165,15 +169,16 @@ all_effects <- parameters::parameters(
 #| eval: false
 
 parameters::parameters(
-  mod, exponentiate = should_exp(mod), 
+  mod, exponentiate = should_exp(mod), component = "conditional",
   p_adjust = "none", summary = TRUE, digits = 3
 )
 ```
 
 ```{r}
 #| echo: false
+#| output: asis
 
-print_html(all_effects)
+print_html(all_effects) |> tab_header(title = NULL)
 ```
 
 
@@ -185,7 +190,6 @@ print_html(all_effects)
 
 anova_res <- car::Anova(mod, type = 3) |> broom::tidy() |> 
   filter(term != "(Intercept)") |> 
-  mutate(p.value = label_pval(p.value)) |> 
   print_html()
 ```
 
@@ -197,6 +201,7 @@ car::Anova(mod, type = 3)
 
 ```{r}
 #| echo: false
+#| output: asis
 
 anova_res
 ```
@@ -219,6 +224,7 @@ display_lrt <- !is.null(lrt_res)
 ```{r}
 #| eval: false
 #| echo: !expr display_lrt
+#| output: asis
 
 LRT(mod, pred = "Condition")
 ```
@@ -234,8 +240,9 @@ cat("*Likelihood Ratio is impossible to compute for this model ...*")
 ```{r}
 #| eval: !expr display_lrt
 #| echo: false
+#| output: asis
 
-lrt_res |> as.data.frame() |> mutate(across(matches("^p.|^pr"), \(v) label_pval(v))) |> print_html()
+as.data.frame(lrt_res) |> print_html()
 ```
 
 ::: {.column-margin}
@@ -254,7 +261,7 @@ Marginal means & Contrasts of each predictor:
 
 ```{r}
 #| echo: false
-#| results: asis
+#| output: asis
 
 preds <- c(insight::find_predictors(mod)$conditional, insight::find_interactions(mod)$conditional)
 

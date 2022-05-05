@@ -2,7 +2,7 @@
 
 This website serves as documentation as well as to showcase the data and R analysis code for *(Leroux S., Rodriguez-Duboc A., Arabo A., Basille-Dugay M., Vaudry D., & Burel D., 2022)* paper:
 
-::: {.callout-note appearance="simple" icon=false}
+::: {.callout-tip appearance="simple" icon=false}
 ## Intermittent hypoxia in a mouse model of apnea of prematurity leads to a retardation of cerebellar development and long-term functional deficits
 :::
 
@@ -15,7 +15,7 @@ Each of the files listed in the navigation bar (left side of the screen) contain
 2) `Models & Diagnostics`: quality of fit, diagnostics and predictions for each of the candidate models of that variable.
 
 :::{.column-margin}
-:::{.callout-tip appearance="simple"}
+:::{.callout-note appearance="simple"}
 Each candidate model is split in its own tab.
 :::
 :::
@@ -31,7 +31,7 @@ We chose to (sometimes) display several candidate models for each variable of in
 3) `Effects Analysis`: the chosen model's coefficients, main effects (Wald $\chi^2$ and Likelihood Ratio Test), and the marginal means and contrasts for each of its predictor. This subsection also includes the box plots showcased in the article.
 
 :::{.column-margin}
-:::{.callout-tip appearance="simple"}
+:::{.callout-note appearance="simple"}
 Each variable is split in its own tab.
 :::
 :::

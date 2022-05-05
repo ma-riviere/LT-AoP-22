@@ -81,6 +81,7 @@ if (toupper(pred) != "CONDITION") boxplot <- boxplot + scale_color_viridis_d()
 ```{r}
 #| eval: !expr (!is_inter)
 #| echo: false
+#| output: asis
 #| fig.width: !expr plot_width
 #| fig.height: !expr (4 + plot_width/3)
 
@@ -100,6 +101,7 @@ cat("❖ **Temporal plot:**")
 ```{r}
 #| eval: !expr is_inter
 #| echo: false
+#| output: asis
 #| fig.width: !expr (4 + plot_width/3)
 #| fig.height: 9
 

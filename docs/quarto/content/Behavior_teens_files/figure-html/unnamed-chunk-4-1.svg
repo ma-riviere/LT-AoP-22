@@ -213,13 +213,12 @@
 <clipPath id="clip2">
   <path d="M 527.117188 96.554688 L 544.398438 96.554688 L 544.398438 341.355469 L 527.117188 341.355469 Z M 527.117188 96.554688 "/>
 </clipPath>
-<image id="image26" width="1" height="300" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAEsCAIAAACNMk6CAAAABmJLR0QA/wD/AP+gvaeTAAAAuUlEQVQ4jY1RWwKDIAxrcixPutM2+6iOIBX3ZZsXAeM4PiRAIEiA5JgBFIYgiEmHBr/0hdUOgKRxl46rx7NBmxGn3jS0Dm/+6fwN18zev927LL+b9Z7eyvvzrdfG33Xxt1i8fc/fP9t1uWct9zR/iJKoTIaSSlFKRubAfZ409S28eJ38U5akc191Y/fzdNu7rD67PeMhd8pq77jzD+7eR5ZZWTMmw2LDFdbp+h7Kh/xOf2l23D/78H4BKmeqMfJ4QxAAAAAASUVORK5CYII="/>
+<image id="image34" width="1" height="300" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAEsCAIAAACNMk6CAAAABmJLR0QA/wD/AP+gvaeTAAAAuUlEQVQ4jY1RWwKDIAxrcixPutM2+6iOIBX3ZZsXAeM4PiRAIEiA5JgBFIYgiEmHBr/0hdUOgKRxl46rx7NBmxGn3jS0Dm/+6fwN18zev927LL+b9Z7eyvvzrdfG33Xxt1i8fc/fP9t1uWct9zR/iJKoTIaSSlFKRubAfZ409S28eJ38U5akc191Y/fzdNu7rD67PeMhd8pq77jzD+7eR5ZZWTMmw2LDFdbp+h7Kh/xOf2l23D/78H4BKmeqMfJ4QxAAAAAASUVORK5CYII="/>
 <pattern id="pattern0" patternUnits="userSpaceOnUse" width="1" height="300"  patternTransform="matrix(17.28,0,0,0.816,527.117972,96.556387)">
-  <use xlink:href="#image26"/>
+  <use xlink:href="#image34"/>
 </pattern>
 </defs>
-<g id="surface22">
-<rect x="0" y="0" width="576" height="360" style="fill:rgb(100%,100%,100%);fill-opacity:1;stroke:none;"/>
+<g id="surface30">
 <path style="fill-rule:nonzero;fill:rgb(22.745098%,22.745098%,59.607843%);fill-opacity:1;stroke-width:2.560748;stroke-linecap:square;stroke-linejoin:miter;stroke:rgb(100%,100%,100%);stroke-opacity:1;stroke-miterlimit:10;" d="M 67.960938 166.308594 L 210.773438 166.308594 L 210.773438 76.683594 L 67.960938 76.683594 Z M 67.960938 166.308594 "/>
 <path style="fill-rule:nonzero;fill:rgb(34.901961%,31.764706%,65.098039%);fill-opacity:1;stroke-width:2.560748;stroke-linecap:square;stroke-linejoin:miter;stroke:rgb(100%,100%,100%);stroke-opacity:1;stroke-miterlimit:10;" d="M 67.960938 255.933594 L 210.773438 255.933594 L 210.773438 166.308594 L 67.960938 166.308594 Z M 67.960938 255.933594 "/>
 <path style="fill-rule:nonzero;fill:rgb(78.431373%,56.470588%,53.72549%);fill-opacity:1;stroke-width:2.560748;stroke-linecap:square;stroke-linejoin:miter;stroke:rgb(100%,100%,100%);stroke-opacity:1;stroke-miterlimit:10;" d="M 67.960938 345.558594 L 210.773438 345.558594 L 210.773438 255.933594 L 67.960938 255.933594 Z M 67.960938 345.558594 "/>

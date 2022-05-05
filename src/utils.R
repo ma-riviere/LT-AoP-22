@@ -10,7 +10,7 @@ log.main("[UTILS] Loading Utils ...")
 
 "%ne%" <- \(lhs, rhs) if(is.null(lhs) || rlang::is_empty(lhs) || lhs == "") return(rhs) else return(lhs)
 
-label_pval <- \(p) paste0(scales::pvalue(p), gtools::stars.pval(p), sep = " ")
+format_pvalue <- function(p) glue::glue("{scales::pvalue(p)} {gtools::stars.pval(p) |> str_remove_all(fixed('.'))}")
 
 get_response_name <- function(var) {
   if(exists(paste0(var, "_name"))) return(eval(parse(text = get_var_name(!!paste0(var, "_name")))))

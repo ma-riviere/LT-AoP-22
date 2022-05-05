@@ -18,6 +18,8 @@ source(here::here("src", "init.R"), echo = FALSE)
 ```{r}
 #| echo: false
 
+# Inspired by: https://themockup.blog/posts/2022-04-18-session-info/
+
 pkg_sesh <- sessioninfo::session_info(pkgs = "attached")
 
 pkg_sesh$platform$quarto <- paste(system("quarto --version", intern = TRUE), "@", quarto::quarto_path())

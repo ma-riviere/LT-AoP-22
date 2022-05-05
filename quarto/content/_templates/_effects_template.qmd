@@ -92,21 +92,29 @@ emm
 ```{r}
 #| eval: !expr (!is_inter)
 #| echo: false
-#| fig.width: !expr plot_width
-#| fig.height: 6
 
 boxplot <- make_signif_boxplot(mod, xaxis = pred)
 
 if (toupper(pred) != "CONDITION") boxplot <- boxplot + scale_color_viridis_d()
+```
+
+```{r}
+#| eval: !expr (!is_inter)
+#| echo: false
+#| output: asis
+#| fig.width: !expr plot_width
+#| fig.height: 6
 
 boxplot
 ```
+
 
 <!--[ For interactions ]--->
 
 ```{r}
 #| eval: !expr is_inter
 #| echo: false
+#| output: asis
 #| fig.width: !expr plot_width
 #| fig.height: 6
 
