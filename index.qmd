@@ -32,7 +32,7 @@ We chose to (sometimes) display several candidate models for each variable of in
 
 :::{.column-margin}
 :::{.callout-note appearance="simple"}
-Each variable is split in its own tab.
+Each predictor is split in its own tab.
 :::
 :::
 
