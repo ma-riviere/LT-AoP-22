@@ -13,10 +13,12 @@ here::i_am("src/setup.R")
 
 if(is.null(renv::project())) renv::init(project = here::here(), bare = TRUE, restart = FALSE)
 
-## Temporary fix for renv library path issue
 if (!startsWith(.libPaths()[1], here::here())) {
   v <- paste0("R-", version$major, ".", strsplit(version$minor, ".", fixed = TRUE)[[1]][1])
-  renv::use(library = here::here("renv", "library", v, "x86_64-w64-mingw32"))
+  dir <- ifelse(Sys.info()[["sysname"]] == "Windows", "x86_64-w64-mingw32", "x86_64-pc-linux-gnu")
+  path <- here::here("renv", "library", v, dir)
+  if(!dir.exists(path)) dir.create(path, recursive = TRUE)
+  .libPaths(path)
 }
 
 project_base_scripts <- c("logger.R", "packages.R", "utils.R", "authors.R", "packman.R")

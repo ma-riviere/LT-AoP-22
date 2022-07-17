@@ -37,7 +37,7 @@ DAPI_ML_Ad_data_agg <- DAPI_ML_Ad_data |>
 ```
 
 ```{r}
-DAPI_ML_Ad_data %>% filter_all(any_vars(is.na(.)))
+DAPI_ML_Ad_data |> filter(if_any(everything(), \(c) is.na(c)))
 ```
 
 

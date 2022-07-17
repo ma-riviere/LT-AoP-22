@@ -43,7 +43,7 @@ vglut_data_agg <- vglut_data |>
 ```
 
 ```{r}
-vglut_data %>% filter_all(any_vars(is.na(.)))
+vglut_data |> filter(if_any(everything(), \(c) is.na(c)))
 ```
 
 <!------------------------------------------------------------------------------>

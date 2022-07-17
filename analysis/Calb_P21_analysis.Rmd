@@ -39,7 +39,7 @@ Calb_P21_data_agg <- Calb_P21_data |>
 ```
 
 ```{r}
-Calb_P21_data %>% filter_all(any_vars(is.na(.)))
+Calb_P21_data |> filter(if_any(everything(), \(c) is.na(c)))
 ```
 
 <!------------------------------------------------------------------------------>

@@ -40,7 +40,7 @@ GluD2_data_agg <- GluD2_data |>
 ```
 
 ```{r}
-GluD2_data %>% filter_all(any_vars(is.na(.)))
+GluD2_data |> filter(if_any(everything(), \(c) is.na(c)))
 ```
 
 <!------------------------------------------------------------------------------>

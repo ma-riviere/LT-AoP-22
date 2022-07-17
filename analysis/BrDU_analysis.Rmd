@@ -23,8 +23,8 @@ BrDU_target <- "BrDU"
 BrDU_responses <- c("Dens_BrDU", "Dens_BrDU_EGL", "Dens_BrDU_IGL")
 BrDU_predictors <- c("Layer", "Condition", "Mouse")
 
-BrDU_data_EGL <- BrDU_data |> filter(Layer == "EGL") |> select(BrDU_predictors, matches("EGL"))
-BrDU_data_IGL <- BrDU_data |> filter(Layer == "IGL") |> select(BrDU_predictors, matches("IGL"))
+BrDU_data_EGL <- BrDU_data |> filter(Layer == "EGL") |> select(all_of(BrDU_predictors), matches("EGL"))
+BrDU_data_IGL <- BrDU_data |> filter(Layer == "IGL") |> select(all_of(BrDU_predictors), matches("IGL"))
 
 Dens_BrDU_name <- "Density of BrDU^(+) cells  \n *(10^(-5) cells/μm^(3))*"
 Dens_BrDU_EGL_name <- "Density of BrDU^(+) cells in the EGL  \n *(10^(-5) cells/μm^(3))*"
@@ -43,7 +43,7 @@ BrDU_data_agg <- BrDU_data |>
 ```
 
 ```{r}
-BrDU_data %>% filter_all(any_vars(is.na(.)))
+BrDU_data |> filter(if_any(everything(), \(c) is.na(c)))
 ```
 
 <!------------------------------------------------------------------------------>

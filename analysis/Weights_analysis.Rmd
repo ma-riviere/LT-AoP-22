@@ -30,9 +30,9 @@ contrasts(weight_data_adults$Stage) <- contr.sum
 ```
 
 ```{r}
-weight_data_pups_teens %>% filter_all(any_vars(is.na(.)))
+weight_data_pups_teens |> filter(if_any(everything(), \(c) is.na(c)))
 
-weight_data_adults %>% filter_all(any_vars(is.na(.)))
+weight_data_adults |> filter(if_any(everything(), \(c) is.na(c)))
 ```
 
 

@@ -35,7 +35,7 @@ mbp_data_agg <- mbp_data |>
 ```
 
 ```{r}
-mbp_data %>% filter_all(any_vars(is.na(.)))
+mbp_data |> filter(if_any(everything(), \(c) is.na(c)))
 ```
 
 

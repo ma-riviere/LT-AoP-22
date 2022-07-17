@@ -1684,7 +1684,7 @@ emmeans::emmeans(behavior_adults_mod_PDT, specs = "Condition", trans = "response
 Plot:
 
 ```{r fig.width = 2, fig.height = 3}
-(make_signif_boxplot(behavior_adults_mod_PDT, xaxis = "Condition", cluster = NULL) + scale_y_continuous(labels = scales::percent)) |> 
+(make_signif_boxplot(behavior_adults_mod_PDT, xaxis = "Condition", cluster = NULL, add_averages_by = NULL) + scale_y_continuous(labels = scales::percent)) |> 
   save_png(filename = glue("[{get_model_tag(behavior_adults_mod_PDT)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
@@ -1870,7 +1870,7 @@ emmeans::emmeans(behavior_adults_mod_PTT, specs = "Condition", trans = "response
 Plot:
 
 ```{r fig.width = 2, fig.height = 3}
-(make_signif_boxplot(behavior_adults_mod_PTT, xaxis = "Condition", cluster = NULL) + scale_y_continuous(labels = scales::percent))|> 
+(make_signif_boxplot(behavior_adults_mod_PTT, xaxis = "Condition", cluster = NULL, add_averages_by = NULL) + scale_y_continuous(labels = scales::percent))|> 
   save_png(filename = glue("[{get_model_tag(behavior_adults_mod_PTT)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
@@ -2057,7 +2057,7 @@ emmeans::emmeans(behavior_adults_mod_AMS, specs = "Condition", trans = "response
 Plot:
 
 ```{r fig.width = 2, fig.height = 3}
-make_signif_boxplot(behavior_adults_mod_AMS, xaxis = "Condition", cluster = NULL) |> 
+make_signif_boxplot(behavior_adults_mod_AMS, xaxis = "Condition", cluster = NULL, add_averages_by = NULL) |> 
   save_png(filename = glue("[{get_model_tag(behavior_adults_mod_AMS)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
@@ -2244,7 +2244,7 @@ emmeans::emmeans(behavior_adults_mod_AD, specs = "Condition", trans = "response"
 Plot:
 
 ```{r fig.width = 2, fig.height = 3}
-make_signif_boxplot(behavior_adults_mod_AD, xaxis = "Condition", cluster = NULL) |> 
+make_signif_boxplot(behavior_adults_mod_AD, xaxis = "Condition", cluster = NULL, add_averages_by = NULL) |> 
   save_png(filename = glue("[{get_model_tag(behavior_adults_mod_AD)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
@@ -2431,7 +2431,7 @@ emmeans::emmeans(behavior_adults_mod_CT, specs = "Condition", trans = "response"
 Plot:
 
 ```{r fig.width = 2, fig.height = 3}
-make_signif_boxplot(behavior_adults_mod_CT, xaxis = "Condition", cluster = NULL) |> 
+make_signif_boxplot(behavior_adults_mod_CT, xaxis = "Condition", cluster = NULL, add_averages_by = NULL) |> 
   save_png(filename = glue("[{get_model_tag(behavior_adults_mod_CT)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
@@ -2589,7 +2589,7 @@ emmeans::emmeans(behavior_adults_mod_NM, specs = "Condition", trans = "response"
 Plot:
 
 ```{r fig.width = 2, fig.height = 3}
-make_signif_boxplot(behavior_adults_mod_NM, xaxis = "Condition", cluster = NULL) |> 
+make_signif_boxplot(behavior_adults_mod_NM, xaxis = "Condition", cluster = NULL, add_averages_by = NULL) |> 
   save_png(filename = glue("[{get_model_tag(behavior_adults_mod_NM)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
@@ -2776,7 +2776,7 @@ emmeans::emmeans(behavior_adults_mod_ORT, specs = "Condition", trans = "response
 Plot:
 
 ```{r fig.width = 2, fig.height = 3}
-make_signif_boxplot(behavior_adults_mod_ORT, xaxis = "Condition", cluster = NULL) |> 
+make_signif_boxplot(behavior_adults_mod_ORT, xaxis = "Condition", cluster = NULL, add_averages_by = NULL) |> 
   save_png(filename = glue("[{get_model_tag(behavior_adults_mod_ORT)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
@@ -2963,7 +2963,7 @@ emmeans::emmeans(behavior_adults_mod_OGT, specs = "Condition", trans = "response
 Plot:
 
 ```{r fig.width = 2, fig.height = 3}
-make_signif_boxplot(behavior_adults_mod_OGT, xaxis = "Condition", cluster = NULL) |> 
+make_signif_boxplot(behavior_adults_mod_OGT, xaxis = "Condition", cluster = NULL, add_averages_by = NULL) |> 
   save_png(filename = glue("[{get_model_tag(behavior_adults_mod_OGT)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
@@ -3150,7 +3150,7 @@ emmeans::emmeans(behavior_adults_mod_POT, specs = "Condition", trans = "response
 Plot:
 
 ```{r fig.width = 2, fig.height = 3}
-make_signif_boxplot(behavior_adults_mod_POT, xaxis = "Condition", cluster = NULL) |> 
+make_signif_boxplot(behavior_adults_mod_POT, xaxis = "Condition", cluster = NULL, add_averages_by = NULL) |> 
   save_png(filename = glue("[{get_model_tag(behavior_adults_mod_POT)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
@@ -3336,7 +3336,7 @@ emmeans::emmeans(behavior_adults_mod_PCT, specs = "Condition", trans = "response
 Plot:
 
 ```{r fig.width = 2, fig.height = 3}
-make_signif_boxplot(behavior_adults_mod_PCT, xaxis = "Condition", cluster = NULL) |> 
+make_signif_boxplot(behavior_adults_mod_PCT, xaxis = "Condition", cluster = NULL, add_averages_by = NULL) |> 
   save_png(filename = glue("[{get_model_tag(behavior_adults_mod_PCT)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
@@ -3527,7 +3527,7 @@ emmeans::emmeans(behavior_adults_mod_NEO, specs = "Condition", trans = "response
 Plot:
 
 ```{r fig.width = 2, fig.height = 3}
-make_signif_boxplot(behavior_adults_mod_NEO, xaxis = "Condition", cluster = NULL) |> 
+make_signif_boxplot(behavior_adults_mod_NEO, xaxis = "Condition", cluster = NULL, add_averages_by = NULL) |> 
   save_png(filename = glue("[{get_model_tag(behavior_adults_mod_NEO)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```
 
@@ -3718,6 +3718,6 @@ emmeans::emmeans(behavior_adults_mod_NEC, specs = "Condition", trans = "response
 Plot:
 
 ```{r fig.width = 2, fig.height = 3}
-make_signif_boxplot(behavior_adults_mod_NEC, xaxis = "Condition", cluster = NULL) |> 
+make_signif_boxplot(behavior_adults_mod_NEC, xaxis = "Condition", cluster = NULL, add_averages_by = NULL) |> 
   save_png(filename = glue("[{get_model_tag(behavior_adults_mod_NEC)}] Boxplots - by [Condition]"), subfolder = behavior_target_adults, dpi = dpi_save_png, width = 5, height = 8)
 ```

@@ -26,7 +26,7 @@ contrasts(Casp_Act_data$Experiment) <- contr.sum
 ```
 
 ```{r}
-Casp_Act_data %>% filter_all(any_vars(is.na(.)))
+Casp_Act_data |> filter(if_any(everything(), \(c) is.na(c)))
 ```
 
 <!------------------------------------------------------------------------------>

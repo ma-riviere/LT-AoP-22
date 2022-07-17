@@ -63,7 +63,7 @@ Casp_P12_data_agg <- Casp_P12_data |>
 ```
 
 ```{r}
-Casp_P12_data %>% filter_all(any_vars(is.na(.)))
+Casp_P12_data |> filter(if_any(everything(), \(c) is.na(c)))
 ```
 
 
