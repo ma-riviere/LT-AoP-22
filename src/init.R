@@ -9,7 +9,10 @@ is_installed <- \(pkg) suppressPackageStartupMessages({require(pkg, quietly = TR
 
 if (!startsWith(.libPaths()[1], here::here())) {
   v <- paste0("R-", version$major, ".", strsplit(version$minor, ".", fixed = TRUE)[[1]][1])
-  renv::use(library = here::here("renv", "library", v, "x86_64-w64-mingw32"))
+  dir <- ifelse(Sys.info()[["sysname"]] == "Windows", "x86_64-w64-mingw32", "x86_64-pc-linux-gnu")
+  path <- here::here("renv", "library", v, dir)
+  if(!dir.exists(path)) dir.create(path, recursive = TRUE)
+  .libPaths(path)
 }
 
 project_base_scripts <- c("logger.R", "packages.R", "utils.R", "packman.R")

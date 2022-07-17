@@ -473,10 +473,10 @@ make_signif_boxplot_inter <- function(
     + theme(
       legend.position = "none",
       axis.title.x = element_blank(),
-      # axis.text.x = element_blank(),
+      axis.text.x = ggtext::element_markdown(),
       axis.title.y = ggtext::element_markdown()
     )
-    + labs(y = resp_name, x = glue::glue("{xaxis} per {facet}"))
+    + labs(y = resp_name, x = glue::glue("{xaxis} *per* {facet}"))
     + scale_x_discrete(labels = \(l) str_replace(l, "_", "\n") |> str_replace("^H", "IH"))
   )
   
