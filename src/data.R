@@ -3,6 +3,7 @@
 #==============================#
 
 stage_list <- c("P4", "P8", "P12", "P21", "Ad")
+layer_list <- c("EGL", "ML", "IGL")
 
 #-----------#
 #### MBP ####
@@ -53,6 +54,29 @@ load_dapi_ml_ad <- function(path) {
   )
 }
 
+#--------------------#
+#### DAPI_Density ####
+#--------------------#
+
+load_dapi_density_P12 <- function(path) {
+  return(
+    read_excel(path)
+    |> filter(!Outlier)
+    |> tidyr::extract(
+      Mouse,
+      into = c("Bloodline", "MouseID", "Condition"),
+      regex = "^(\\w{2})(\\d{1})([hH]+|[nN]+)$",
+      convert = T, remove = F
+    )
+    |> mutate(
+      Condition = factor(Condition, levels = c("N", "H"), labels = c("N", "IH")),
+      Mouse = factor(Mouse),
+      Layer = factor(Layer, levels = layer_list)
+    )
+    |> arrange(Condition, Slice)
+    |> select(Layer, Mouse, Condition, Slice, Nb_Area, Nb_Vol, Avg_Distance)
+  )
+}
 
 #-------------#
 #### VGLUT ####

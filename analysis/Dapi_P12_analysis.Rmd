@@ -1,0 +1,999 @@
+```{r include = F, echo = F}
+source("../src/setup.R", echo = F)
+```
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# I. Data:
+***
+
+```{r data}
+
+DAPI_Density_P12_target <- "DAPI_Density_P12"
+
+(DAPI_Density_P12_data <- load_dapi_density_P12(config$data$dapi_density_P12_path))
+
+### Variables:
+
+DAPI_Density_P12_responses <- c("Nb_Area", "Nb_Vol", "Avg_Distance")
+DAPI_Density_P12_predictors <- c("Condition", "Mouse", "Layer")
+
+Nb_Area_name <- "Cell density *(10^(-3) cell number/μm^(2))*"
+Nb_Vol_name <- "Cell density *(10^(-2) cell number/μm^(3))*"
+Avg_Distance_name <- "Average distance between cells *(μm)*"
+
+contrasts(DAPI_Density_P12_data$Condition) <- contr.sum
+contrasts(DAPI_Density_P12_data$Mouse) <- contr.sum
+contrasts(DAPI_Density_P12_data$Layer) <- contr.sum
+
+### Averaged data:
+
+DAPI_Density_P12_data_agg <- DAPI_Density_P12_data |> 
+  group_by(Mouse, Condition) |> 
+  summarize(across(matches(DAPI_Density_P12_responses), .fns = \(.x) mean(.x, na.rm = T))) |> 
+  ungroup() |> 
+  mutate(
+    dCondition = as.numeric(Condition == "IH"),
+    ID = row_number()
+  )
+```
+
+```{r}
+DAPI_Density_P12_data |> filter(if_any(everything(), \(c) is.na(c)))
+```
+
+
+<!------------------------------------------------------------------------------>
+## Correlations:
+***
+
+```{r fig.width = 8}
+corr_matrix_plot(DAPI_Density_P12_data, vars = c(DAPI_Density_P12_predictors, DAPI_Density_P12_responses))
+```
+
+```{r fig.width = 10}
+GGally::ggpairs(
+  DAPI_Density_P12_data, columns = c(DAPI_Density_P12_predictors, DAPI_Density_P12_responses), 
+  mapping = aes(color = Condition), lower = list(continuous = "smooth")
+)
+```
+
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# II. Nb_Area:
+***
+
+<!------------------------------------------------------------------------------>
+## 1. Data Exploration:
+***
+
+<!------------------------------------------------------------------------------>
+### Distributions:
+
+**By Condition:**
+
+```{r}
+distribution_summary(DAPI_Density_P12_data, dvs = "Nb_Area", between = "Condition")
+```
+
+```{r}
+hist_plot(DAPI_Density_P12_data, var = "Nb_Area", facet = "Condition")
+```
+
+**By Layer:**
+
+```{r}
+distribution_summary(DAPI_Density_P12_data, dvs = "Nb_Area", between = "Layer")
+```
+
+```{r}
+hist_plot(DAPI_Density_P12_data, var = "Nb_Area", facet = "Layer")
+```
+
+**By Condition:Layer:**
+
+```{r}
+distribution_summary(DAPI_Density_P12_data, dvs = "Nb_Area", between = c("Condition", "Layer"))
+```
+
+```{r}
+hist_plot(DAPI_Density_P12_data, var = "Nb_Area") + facet_grid(rows = vars(Layer), cols = vars(Condition))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 2. Models:
+***
+
+<!------------------------------------------------------------------------------>
+### Welch t-test:
+
+On data averaged by Mouse.
+Data is assumed heteroscedastic in relation to `Condition`.
+
+```{r}
+DAPI_Density_P12_mod_Nb_Area_agg <- afex::mixed(
+  Nb_Area ~ Condition + (0 + dCondition | ID),
+  data = DAPI_Density_P12_data_agg,
+  control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.nRE = "ignore"),
+  check_contrasts = F,
+  method = "S",
+  type = 3,
+  test_intercept = FALSE
+)
+
+parameters(DAPI_Density_P12_mod_Nb_Area_agg$full_model, effects = "fixed", ci_method = "wald", drop = "Intercept")
+```
+
+
+<!------------------------------------------------------------------------------>
+### GLMM:
+
+**Gaussian:**
+
+```{r}
+DAPI_Density_P12_mod_Nb_Area_gauss <- glmmTMB(
+  Nb_Area ~ Condition * Layer + (1 | Mouse),
+  family = gaussian("log"),
+  data = DAPI_Density_P12_data,
+  REML = T
+)
+
+parameters(DAPI_Density_P12_mod_Nb_Area_gauss)
+cat("\n")
+performance(DAPI_Density_P12_mod_Nb_Area_gauss)
+```
+
+**Gamma:**
+
+```{r}
+DAPI_Density_P12_mod_Nb_Area_gamma <- glmmTMB(
+  Nb_Area ~ Condition * Layer + (1 | Mouse),
+  family = Gamma("log"),
+  data = DAPI_Density_P12_data,
+  REML = T
+)
+
+parameters(DAPI_Density_P12_mod_Nb_Area_gamma)
+cat("\n")
+performance(DAPI_Density_P12_mod_Nb_Area_gamma)
+```
+
+<!------------------------------------------------------------------------------>
+## 3. Model Diagnostics:
+***
+
+**Model comparison:**
+
+```{r}
+performance::compare_performance(DAPI_Density_P12_mod_Nb_Area_gauss, DAPI_Density_P12_mod_Nb_Area_gamma)
+```
+
+Best model:
+
+```{r}
+DAPI_Density_P12_mod_Nb_Area <- DAPI_Density_P12_mod_Nb_Area_gamma
+```
+
+
+<!------------------------------------------------------------------------------>
+### Residuals:
+
+```{r fig.width = 10}
+make_acf_plot(DAPI_Density_P12_mod_Nb_Area)
+
+performance::check_model(DAPI_Density_P12_mod_Nb_Area, detrend = TRUE)
+```
+
+
+<!------------------------------------------------------------------------------>
+### Predictions:
+
+```{r}
+nsim <- 300
+
+DAPI_Density_P12_mod_Nb_Area_dharma <- DHARMa::simulateResiduals(DAPI_Density_P12_mod_Nb_Area, plot = F, n = nsim, seed = getOption("seed"))
+DAPI_Density_P12_mod_Nb_Area_dharma_t <- DAPI_Density_P12_mod_Nb_Area_dharma$simulatedResponse |> t()
+```
+
+```{r fig.width = 10}
+ppc_plots(DAPI_Density_P12_mod_Nb_Area, DAPI_Density_P12_mod_Nb_Area_dharma_t, term = "Condition")
+ppc_plots(DAPI_Density_P12_mod_Nb_Area, DAPI_Density_P12_mod_Nb_Area_dharma_t, term = "Layer")
+```
+
+```{r fig.width = 10}
+ppc_stat_plots(DAPI_Density_P12_mod_Nb_Area, DAPI_Density_P12_mod_Nb_Area_dharma_t, term = "Condition")
+ppc_stat_plots(DAPI_Density_P12_mod_Nb_Area, DAPI_Density_P12_mod_Nb_Area_dharma_t, term = "Layer")
+```
+
+**Potential outliers:**
+
+```{r}
+insight::get_data(DAPI_Density_P12_mod_Nb_Area) |> 
+  filter(!is.na(Nb_Area)) |> 
+  rownames_to_column("ID") |> 
+  filter(ID %in% DHARMa::outliers(DAPI_Density_P12_mod_Nb_Area_dharma))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 4. Effects Analysis:
+***
+
+<!------------------------------------------------------------------------------>
+### Coefficients:
+
+**All effects (Wald):**
+
+```{r}
+parameters::parameters(
+  DAPI_Density_P12_mod_Nb_Area, exponentiate = should_exp(DAPI_Density_P12_mod_Nb_Area), 
+  ci_method = "wald", p_adjust = "none", summary = T, digits = 3
+)
+```
+
+**Main effects (Wald):**
+
+```{r}
+car::Anova(DAPI_Density_P12_mod_Nb_Area, type = 3)
+```
+
+**Main effects (LRT):**
+
+```{r}
+LRT(DAPI_Density_P12_mod_Nb_Area, pred = "Condition")
+```
+
+
+<!------------------------------------------------------------------------------>
+### Marginal Effects:
+
+**Condition**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(DAPI_Density_P12_mod_Nb_Area), dvs = insight::find_response(DAPI_Density_P12_mod_Nb_Area), between = "Condition")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Nb_Area, specs = "Condition", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Nb_Area, specs = "Condition", type = "response") |>
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Nb_Area, specs = "Condition", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 5, fig.height = 8}
+make_signif_boxplot(DAPI_Density_P12_mod_Nb_Area, xaxis = "Condition") |> 
+  save_png(filename = glue("[{get_model_tag(DAPI_Density_P12_mod_Nb_Area)}] Boxplots - by [Condition]"), subfolder = DAPI_Density_P12_target, dpi = dpi_save_png, width = 5, height = 8)
+```
+
+**Layer**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(DAPI_Density_P12_mod_Nb_Area), dvs = insight::find_response(DAPI_Density_P12_mod_Nb_Area), between = "Layer")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Nb_Area, specs = "Layer", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Nb_Area, specs = "Layer", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Nb_Area, specs = "Layer", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 3, fig.height = 5}
+make_signif_boxplot(DAPI_Density_P12_mod_Nb_Area, xaxis = "Layer") |> 
+  save_png(filename = glue("[{get_model_tag(DAPI_Density_P12_mod_Nb_Area)}] Boxplots - by [Layer]"), subfolder = DAPI_Density_P12_target, dpi = dpi_save_png, width = 5, height = 8)
+```
+
+**Condition:Layer**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(DAPI_Density_P12_mod_Nb_Area), dvs = insight::find_response(DAPI_Density_P12_mod_Nb_Area), between = c("Layer", "Condition"))
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Nb_Area, specs = ~ Condition | Layer, type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Nb_Area, specs = ~ Condition | Layer, type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Nb_Area, specs = ~ Condition | Layer, type = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Nb_Area, specs = ~ Condition | Layer, trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Nb_Area, specs = ~ Condition | Layer, trans = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+```
+
+Plots:
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot(DAPI_Density_P12_mod_Nb_Area, xaxis = "Condition", facet = "Layer") |> 
+  save_png(filename = glue("[{get_model_tag(DAPI_Density_P12_mod_Nb_Area)}] Boxplots - by [Condition] within [Layer]"), subfolder = DAPI_Density_P12_target, dpi = dpi_save_png, width = 6, height = 5)
+```
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot_inter(DAPI_Density_P12_mod_Nb_Area, xaxis = "Condition", facet = "Layer") |> 
+  save_png(filename = glue("[{get_model_tag(DAPI_Density_P12_mod_Nb_Area)}] Interaction Boxplots - by [Condition] within [Layer]"), subfolder = DAPI_Density_P12_target, dpi = dpi_save_png, width = 6, height = 5)
+```
+
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# III. Nb_Vol:
+***
+
+<!------------------------------------------------------------------------------>
+## 1. Data Exploration:
+***
+
+<!------------------------------------------------------------------------------>
+### Distributions:
+
+**By Condition:**
+
+```{r}
+distribution_summary(DAPI_Density_P12_data, dvs = "Nb_Vol", between = "Condition")
+```
+
+```{r}
+hist_plot(DAPI_Density_P12_data, var = "Nb_Vol", facet = "Condition")
+```
+
+**By Layer:**
+
+```{r}
+distribution_summary(DAPI_Density_P12_data, dvs = "Nb_Vol", between = "Layer")
+```
+
+```{r}
+hist_plot(DAPI_Density_P12_data, var = "Nb_Vol", facet = "Layer")
+```
+
+**By Condition:Layer:**
+
+```{r}
+distribution_summary(DAPI_Density_P12_data, dvs = "Nb_Vol", between = c("Condition", "Layer"))
+```
+
+```{r}
+hist_plot(DAPI_Density_P12_data, var = "Nb_Vol") + facet_grid(rows = vars(Layer), cols = vars(Condition))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 2. Models:
+***
+
+<!------------------------------------------------------------------------------>
+### Welch t-test:
+
+On data averaged by Mouse.
+Data is assumed heteroscedastic in relation to `Condition`.
+
+```{r}
+DAPI_Density_P12_mod_Nb_Vol_agg <- afex::mixed(
+  Nb_Vol ~ Condition + (0 + dCondition | ID),
+  data = DAPI_Density_P12_data_agg,
+  control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.nRE = "ignore"),
+  check_contrasts = F,
+  method = "S",
+  type = 3,
+  test_intercept = FALSE
+)
+
+parameters(DAPI_Density_P12_mod_Nb_Vol_agg$full_model, effects = "fixed", ci_method = "wald", drop = "Intercept")
+```
+
+
+<!------------------------------------------------------------------------------>
+### GLMM:
+
+**Gaussian:**
+
+```{r}
+DAPI_Density_P12_mod_Nb_Vol_gauss <- glmmTMB(
+  Nb_Vol ~ Condition * Layer + (1 | Mouse),
+  family = gaussian("log"),
+  data = DAPI_Density_P12_data,
+  REML = T
+)
+
+parameters(DAPI_Density_P12_mod_Nb_Vol_gauss)
+cat("\n")
+performance(DAPI_Density_P12_mod_Nb_Vol_gauss)
+```
+
+**Gamma:**
+
+```{r}
+DAPI_Density_P12_mod_Nb_Vol_gamma <- glmmTMB(
+  Nb_Vol ~ Condition * Layer + (1 | Mouse),
+  family = Gamma("log"),
+  data = DAPI_Density_P12_data,
+  REML = T
+)
+
+parameters(DAPI_Density_P12_mod_Nb_Vol_gamma)
+cat("\n")
+performance(DAPI_Density_P12_mod_Nb_Vol_gamma)
+```
+
+<!------------------------------------------------------------------------------>
+## 3. Model Diagnostics:
+***
+
+**Model comparison:**
+
+```{r}
+performance::compare_performance(DAPI_Density_P12_mod_Nb_Vol_gauss, DAPI_Density_P12_mod_Nb_Vol_gamma)
+```
+
+Best model:
+
+```{r}
+DAPI_Density_P12_mod_Nb_Vol <- DAPI_Density_P12_mod_Nb_Vol_gamma
+```
+
+
+<!------------------------------------------------------------------------------>
+### Residuals:
+
+```{r fig.width = 10}
+make_acf_plot(DAPI_Density_P12_mod_Nb_Vol)
+
+performance::check_model(DAPI_Density_P12_mod_Nb_Vol, detrend = TRUE)
+```
+
+
+<!------------------------------------------------------------------------------>
+### Predictions:
+
+```{r}
+nsim <- 300
+
+DAPI_Density_P12_mod_Nb_Vol_dharma <- DHARMa::simulateResiduals(DAPI_Density_P12_mod_Nb_Vol, plot = F, n = nsim, seed = getOption("seed"))
+DAPI_Density_P12_mod_Nb_Vol_dharma_t <- DAPI_Density_P12_mod_Nb_Vol_dharma$simulatedResponse |> t()
+```
+
+```{r fig.width = 10}
+ppc_plots(DAPI_Density_P12_mod_Nb_Vol, DAPI_Density_P12_mod_Nb_Vol_dharma_t, term = "Condition")
+ppc_plots(DAPI_Density_P12_mod_Nb_Vol, DAPI_Density_P12_mod_Nb_Vol_dharma_t, term = "Layer")
+```
+
+```{r fig.width = 10}
+ppc_stat_plots(DAPI_Density_P12_mod_Nb_Vol, DAPI_Density_P12_mod_Nb_Vol_dharma_t, term = "Condition")
+ppc_stat_plots(DAPI_Density_P12_mod_Nb_Vol, DAPI_Density_P12_mod_Nb_Vol_dharma_t, term = "Layer")
+```
+
+**Potential outliers:**
+
+```{r}
+insight::get_data(DAPI_Density_P12_mod_Nb_Vol) |> 
+  filter(!is.na(Nb_Vol)) |> 
+  rownames_to_column("ID") |> 
+  filter(ID %in% DHARMa::outliers(DAPI_Density_P12_mod_Nb_Vol_dharma))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 4. Effects Analysis:
+***
+
+<!------------------------------------------------------------------------------>
+### Coefficients:
+
+**All effects (Wald):**
+
+```{r}
+parameters::parameters(
+  DAPI_Density_P12_mod_Nb_Vol, exponentiate = should_exp(DAPI_Density_P12_mod_Nb_Vol), 
+  ci_method = "wald", p_adjust = "none", summary = T, digits = 3
+)
+```
+
+**Main effects (Wald):**
+
+```{r}
+car::Anova(DAPI_Density_P12_mod_Nb_Vol, type = 3)
+```
+
+**Main effects (LRT):**
+
+```{r}
+LRT(DAPI_Density_P12_mod_Nb_Vol, pred = "Condition")
+```
+
+
+<!------------------------------------------------------------------------------>
+### Marginal Effects:
+
+**Condition**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(DAPI_Density_P12_mod_Nb_Vol), dvs = insight::find_response(DAPI_Density_P12_mod_Nb_Vol), between = "Condition")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Nb_Vol, specs = "Condition", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Nb_Vol, specs = "Condition", type = "response") |>
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Nb_Vol, specs = "Condition", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 5, fig.height = 8}
+make_signif_boxplot(DAPI_Density_P12_mod_Nb_Vol, xaxis = "Condition") |> 
+  save_png(filename = glue("[{get_model_tag(DAPI_Density_P12_mod_Nb_Vol)}] Boxplots - by [Condition]"), subfolder = DAPI_Density_P12_target, dpi = dpi_save_png, width = 5, height = 8)
+```
+
+**Layer**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(DAPI_Density_P12_mod_Nb_Vol), dvs = insight::find_response(DAPI_Density_P12_mod_Nb_Vol), between = "Layer")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Nb_Vol, specs = "Layer", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Nb_Vol, specs = "Layer", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Nb_Vol, specs = "Layer", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 3, fig.height = 5}
+make_signif_boxplot(DAPI_Density_P12_mod_Nb_Vol, xaxis = "Layer") |> 
+  save_png(filename = glue("[{get_model_tag(DAPI_Density_P12_mod_Nb_Vol)}] Boxplots - by [Layer]"), subfolder = DAPI_Density_P12_target, dpi = dpi_save_png, width = 5, height = 8)
+```
+
+**Condition:Layer**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(DAPI_Density_P12_mod_Nb_Vol), dvs = insight::find_response(DAPI_Density_P12_mod_Nb_Vol), between = c("Layer", "Condition"))
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Nb_Vol, specs = ~ Condition | Layer, type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Nb_Vol, specs = ~ Condition | Layer, type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Nb_Vol, specs = ~ Condition | Layer, type = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Nb_Vol, specs = ~ Condition | Layer, trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Nb_Vol, specs = ~ Condition | Layer, trans = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+```
+
+Plots:
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot(DAPI_Density_P12_mod_Nb_Vol, xaxis = "Condition", facet = "Layer") |> 
+  save_png(filename = glue("[{get_model_tag(DAPI_Density_P12_mod_Nb_Vol)}] Boxplots - by [Condition] within [Layer]"), subfolder = DAPI_Density_P12_target, dpi = dpi_save_png, width = 6, height = 5)
+```
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot_inter(DAPI_Density_P12_mod_Nb_Vol, xaxis = "Condition", facet = "Layer") |> 
+  save_png(filename = glue("[{get_model_tag(DAPI_Density_P12_mod_Nb_Vol)}] Interaction Boxplots - by [Condition] within [Layer]"), subfolder = DAPI_Density_P12_target, dpi = dpi_save_png, width = 6, height = 5)
+```
+
+
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# IV. Avg_Distance:
+***
+
+<!------------------------------------------------------------------------------>
+## 1. Data Exploration:
+***
+
+<!------------------------------------------------------------------------------>
+### Distributions:
+
+**By Condition:**
+
+```{r}
+distribution_summary(DAPI_Density_P12_data, dvs = "Avg_Distance", between = "Condition")
+```
+
+```{r}
+hist_plot(DAPI_Density_P12_data, var = "Avg_Distance", facet = "Condition")
+```
+
+**By Layer:**
+
+```{r}
+distribution_summary(DAPI_Density_P12_data, dvs = "Avg_Distance", between = "Layer")
+```
+
+```{r}
+hist_plot(DAPI_Density_P12_data, var = "Avg_Distance", facet = "Layer")
+```
+
+**By Condition:Layer:**
+
+```{r}
+distribution_summary(DAPI_Density_P12_data, dvs = "Avg_Distance", between = c("Condition", "Layer"))
+```
+
+```{r}
+hist_plot(DAPI_Density_P12_data, var = "Avg_Distance") + facet_grid(rows = vars(Layer), cols = vars(Condition))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 2. Models:
+***
+
+<!------------------------------------------------------------------------------>
+### Welch t-test:
+
+On data averaged by Mouse.
+Data is assumed heteroscedastic in relation to `Condition`.
+
+```{r}
+DAPI_Density_P12_mod_Avg_Distance_agg <- afex::mixed(
+  Avg_Distance ~ Condition + (0 + dCondition | ID),
+  data = DAPI_Density_P12_data_agg,
+  control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.nRE = "ignore"),
+  check_contrasts = F,
+  method = "S",
+  type = 3,
+  test_intercept = FALSE
+)
+
+parameters(DAPI_Density_P12_mod_Avg_Distance_agg$full_model, effects = "fixed", ci_method = "wald", drop = "Intercept")
+```
+
+
+<!------------------------------------------------------------------------------>
+### GLMM:
+
+**Gaussian:**
+
+```{r}
+DAPI_Density_P12_mod_Avg_Distance_gauss <- glmmTMB(
+  Avg_Distance ~ Condition * Layer + (1 | Mouse),
+  family = gaussian("log"),
+  data = DAPI_Density_P12_data,
+  REML = T
+)
+
+parameters(DAPI_Density_P12_mod_Avg_Distance_gauss)
+cat("\n")
+performance(DAPI_Density_P12_mod_Avg_Distance_gauss)
+```
+
+**Gamma:**
+
+```{r}
+DAPI_Density_P12_mod_Avg_Distance_gamma <- glmmTMB(
+  Avg_Distance ~ Condition * Layer + (1 | Mouse),
+  family = Gamma("log"),
+  data = DAPI_Density_P12_data,
+  REML = T
+)
+
+parameters(DAPI_Density_P12_mod_Avg_Distance_gamma)
+cat("\n")
+performance(DAPI_Density_P12_mod_Avg_Distance_gamma)
+```
+
+<!------------------------------------------------------------------------------>
+## 3. Model Diagnostics:
+***
+
+**Model comparison:**
+
+```{r}
+performance::compare_performance(DAPI_Density_P12_mod_Avg_Distance_gauss, DAPI_Density_P12_mod_Avg_Distance_gamma)
+```
+
+Best model:
+
+```{r}
+DAPI_Density_P12_mod_Avg_Distance <- DAPI_Density_P12_mod_Avg_Distance_gamma
+```
+
+
+<!------------------------------------------------------------------------------>
+### Residuals:
+
+```{r fig.width = 10}
+make_acf_plot(DAPI_Density_P12_mod_Avg_Distance)
+
+performance::check_model(DAPI_Density_P12_mod_Avg_Distance, detrend = TRUE)
+```
+
+
+<!------------------------------------------------------------------------------>
+### Predictions:
+
+```{r}
+nsim <- 300
+
+DAPI_Density_P12_mod_Avg_Distance_dharma <- DHARMa::simulateResiduals(DAPI_Density_P12_mod_Avg_Distance, plot = F, n = nsim, seed = getOption("seed"))
+DAPI_Density_P12_mod_Avg_Distance_dharma_t <- DAPI_Density_P12_mod_Avg_Distance_dharma$simulatedResponse |> t()
+```
+
+```{r fig.width = 10}
+ppc_plots(DAPI_Density_P12_mod_Avg_Distance, DAPI_Density_P12_mod_Avg_Distance_dharma_t, term = "Condition")
+ppc_plots(DAPI_Density_P12_mod_Avg_Distance, DAPI_Density_P12_mod_Avg_Distance_dharma_t, term = "Layer")
+```
+
+```{r fig.width = 10}
+ppc_stat_plots(DAPI_Density_P12_mod_Avg_Distance, DAPI_Density_P12_mod_Avg_Distance_dharma_t, term = "Condition")
+ppc_stat_plots(DAPI_Density_P12_mod_Avg_Distance, DAPI_Density_P12_mod_Avg_Distance_dharma_t, term = "Layer")
+```
+
+**Potential outliers:**
+
+```{r}
+insight::get_data(DAPI_Density_P12_mod_Avg_Distance) |> 
+  filter(!is.na(Avg_Distance)) |> 
+  rownames_to_column("ID") |> 
+  filter(ID %in% DHARMa::outliers(DAPI_Density_P12_mod_Avg_Distance_dharma))
+```
+
+
+<!------------------------------------------------------------------------------>
+## 4. Effects Analysis:
+***
+
+<!------------------------------------------------------------------------------>
+### Coefficients:
+
+**All effects (Wald):**
+
+```{r}
+parameters::parameters(
+  DAPI_Density_P12_mod_Avg_Distance, exponentiate = should_exp(DAPI_Density_P12_mod_Avg_Distance), 
+  ci_method = "wald", p_adjust = "none", summary = T, digits = 3
+)
+```
+
+**Main effects (Wald):**
+
+```{r}
+car::Anova(DAPI_Density_P12_mod_Avg_Distance, type = 3)
+```
+
+**Main effects (LRT):**
+
+```{r}
+LRT(DAPI_Density_P12_mod_Avg_Distance, pred = "Condition")
+```
+
+
+<!------------------------------------------------------------------------------>
+### Marginal Effects:
+
+**Condition**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(DAPI_Density_P12_mod_Avg_Distance), dvs = insight::find_response(DAPI_Density_P12_mod_Avg_Distance), between = "Condition")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Avg_Distance, specs = "Condition", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Avg_Distance, specs = "Condition", type = "response") |>
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Avg_Distance, specs = "Condition", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 5, fig.height = 8}
+make_signif_boxplot(DAPI_Density_P12_mod_Avg_Distance, xaxis = "Condition") |> 
+  save_png(filename = glue("[{get_model_tag(DAPI_Density_P12_mod_Avg_Distance)}] Boxplots - by [Condition]"), subfolder = DAPI_Density_P12_target, dpi = dpi_save_png, width = 5, height = 8)
+```
+
+**Layer**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(DAPI_Density_P12_mod_Avg_Distance), dvs = insight::find_response(DAPI_Density_P12_mod_Avg_Distance), between = "Layer")
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Avg_Distance, specs = "Layer", type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Avg_Distance, specs = "Layer", type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Avg_Distance, specs = "Layer", trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+Plot:
+
+```{r fig.width = 3, fig.height = 5}
+(make_signif_boxplot(DAPI_Density_P12_mod_Avg_Distance, xaxis = "Layer") + scale_color_viridis_d()) |> 
+  save_png(filename = glue("[{get_model_tag(DAPI_Density_P12_mod_Avg_Distance)}] Boxplots - by [Layer]"), subfolder = DAPI_Density_P12_target, dpi = dpi_save_png, width = 5, height = 8)
+```
+
+**Condition:Layer**
+
+Marginal Means:
+
+```{r}
+log.main("===[Observed]===\n")
+
+distribution_summary(insight::get_data(DAPI_Density_P12_mod_Avg_Distance), dvs = insight::find_response(DAPI_Density_P12_mod_Avg_Distance), between = c("Layer", "Condition"))
+
+log.main("===[Emmeans]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Avg_Distance, specs = ~ Condition | Layer, type = "response")
+```
+
+Marginal Contrasts:
+
+```{r}
+log.main("===[Link scale]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Avg_Distance, specs = ~ Condition | Layer, type = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Avg_Distance, specs = ~ Condition | Layer, type = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+
+log.main("===[Response scale]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Avg_Distance, specs = ~ Condition | Layer, trans = "response") |> 
+  emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+log.note("===[Interaction]===\n")
+
+emmeans::emmeans(DAPI_Density_P12_mod_Avg_Distance, specs = ~ Condition | Layer, trans = "response") |>
+  emmeans::contrast(interaction = c("pairwise"), by = NULL, adjust = "none", infer = TRUE)
+```
+
+Plots:
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot(DAPI_Density_P12_mod_Avg_Distance, xaxis = "Condition", facet = "Layer") |> 
+  save_png(filename = glue("[{get_model_tag(DAPI_Density_P12_mod_Avg_Distance)}] Boxplots - by [Condition] within [Layer]"), subfolder = DAPI_Density_P12_target, dpi = dpi_save_png, width = 6, height = 5)
+```
+
+```{r fig.width = 6, fig.height = 5}
+make_signif_boxplot_inter(DAPI_Density_P12_mod_Avg_Distance, xaxis = "Condition", facet = "Layer") |> 
+  save_png(filename = glue("[{get_model_tag(DAPI_Density_P12_mod_Avg_Distance)}] Interaction Boxplots - by [Condition] within [Layer]"), subfolder = DAPI_Density_P12_target, dpi = dpi_save_png, width = 6, height = 5)
+```
+
+
