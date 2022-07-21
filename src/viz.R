@@ -345,14 +345,16 @@ make_signif_boxplot <- function(
   
   # -----------[ Plot ]----------- #
   
-  plot <- (ggplot(dat, aes(x = .data[[xaxis]], y = .data[[resp]], color = .data[[xaxis]]))
+  plot <- (ggplot(dat, aes_string(x = xaxis, y = resp, color = xaxis))
     + geom_boxplot(outlier.alpha = 0, size = 1.1)
     + stat_summary(fun = mean, geom = "errorbar", aes(ymax = ..y.., ymin = ..y..), width = 0.75, size = 1.1, linetype = "dotted")
     + {if (!is.null(add_averages_by)) stat_summary(
         aes_string(group = add_averages_by, fill = xaxis), geom = "point", fun = mean, 
         size = ifelse(is.null(facet), 4, 3), shape = 23, color = "black", alpha = 0.8, position = position_dodge(0.2)
       )}
-    + geom_jitter(size = 2, width = 0.1, alpha = 0.3)
+    + { if (!is.null(cluster)) geom_jitter(size = 2, width = 0.1, alpha = 0.3)
+        else geom_jitter(aes_string(fill = xaxis), shape = 23, color = "black", size = 3, width = 0.1, alpha = 0.8)
+      }
     + geom_errorbarh(
       data = p_data_contrasts, aes(xmin = x1, xmax = x2, y = pos.y), inherit.aes = FALSE, 
       color = "black", height = 0.03 * amp, size = 0.5

@@ -251,6 +251,6 @@ emmeans::emmeans(ROS_mod_perc, specs = "Condition", trans = "response") |>
 Plot:
 
 ```{r fig.width = 5, fig.height = 8}
-make_signif_boxplot(ROS_mod_perc, xaxis = "Condition", add_averages_by = NULL) |> 
+make_signif_boxplot(ROS_mod_perc, xaxis = "Condition", cluster = NULL, add_averages_by = NULL) |> 
   save_png(filename = glue("[{get_model_tag(ROS_mod_perc)}] Boxplots - by [Condition]"), subfolder = ROS_target, dpi = dpi_save_png, width = 5, height = 8)
 ```
