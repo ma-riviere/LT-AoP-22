@@ -599,22 +599,22 @@ modeled_temporal_plot <- function(
   )
   
   plot <- (ggplot(emmeans, aes_string(x = time, y = "Modeled", color = treatment))
-           + geom_jitter(data = data, aes_string(y = resp), alpha = 0.6, size = 2, width = 0.1, height = 0) # Data points
-           + geom_point(size = 3, position = position_dodge(0.15)) # Modeled emmeans
-           + geom_errorbar(aes_string(ymin = LCL_name, ymax = UCL_name), width = 0.25, size = 1.1, position = position_dodge(0.15))
-           + geom_line(aes_string(group = treatment), position = position_dodge(0.15))
-           + geom_text(
-             data = p_data,
-             aes_string(label = "p.signif", x = time, y = "pos.y"),
-             vjust = 0.5, hjust = 0.5,
-             size = 5, color = "black"
-           )
-           + labs(y = resp_name %||% get_response_name(resp))
-           + theme(
-             legend.position = "right",
-             legend.key.size = unit(1.5, 'cm'), 
-             legend.title = element_text(size = 14),
-           )
+    + geom_jitter(data = data, aes_string(y = resp), alpha = 0.4, size = 2, width = 0.1, height = 0) # Data points
+    + geom_point(size = 3, position = position_dodge(0.15)) # Modeled emmeans
+    + geom_errorbar(aes_string(ymin = LCL_name, ymax = UCL_name), width = 0.25, size = 1.1, position = position_dodge(0.15))
+    + geom_line(aes_string(group = treatment), position = position_dodge(0.15))
+    + geom_text(
+     data = p_data,
+     aes_string(label = "p.signif", x = time, y = "pos.y"),
+     vjust = 0.5, hjust = 0.5,
+     size = 5, color = "black"
+    )
+    + labs(y = resp_name %||% get_response_name(resp))
+    + theme(
+     legend.position = "right",
+     legend.key.size = unit(1.5, 'cm'), 
+     legend.title = element_text(size = 14),
+    )
   )
   
   if (!is.null(xlims)) plot <- plot + scale_x_discrete(limits = xlims)

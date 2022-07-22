@@ -321,7 +321,7 @@ load_Casp_Act <- function(path) {
 #### Weights ####
 #---------------#
 
-load_Weights <- function(path, age = "All") {
+load_Weight <- function(path = config$data$weight_path, age = "All") {
   if (is.null(age) || str_to_sentence(age) == "All") {
     return(
       purrr::map_df(
@@ -350,6 +350,32 @@ load_Weights <- function(path, age = "All") {
       |> select(Mouse, Stage, Condition, Stage, Day, Weight)
     )
   }
+}
+
+load_Weight_Nest <- function(path = config$data$weight_path) {
+  return(
+    readxl::read_xlsx(path, sheet = "Nest")
+    |> mutate(Condition = factor(Condition, levels = c("N", "H"), labels = c("N", "IH")))
+  )
+}
+
+load_Weight_Gain <- function(path = config$data$weight_path) {
+  return(
+    readxl::read_xlsx(path, sheet = "Weight_Gain_PT")
+    |> tidyr::unite(
+      "Mouse",
+      Litter, MouseID, Condition,
+      sep = "",
+      remove = F
+    )
+    |> filter(Stage != "P2") # Removing P2 since it's the point of origin (and thus always 0)
+    |> mutate(
+      Condition = factor(Condition, levels = c("N", "H"), labels = c("N", "IH")),
+      Stage = factor(Stage, levels = c(paste0("P", 3:10), "P16", "P21")),
+      Day = str_extract(Stage, "(\\d{1,2})$") |> as.integer()
+    )
+    |> select(Mouse, Condition, Sex, Stage, Day, Weight_Gain)
+  )
 }
 
 #----------------#
