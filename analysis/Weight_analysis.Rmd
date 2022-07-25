@@ -79,25 +79,15 @@ hist_plot(weight_data_pups_teens_nest, var = "Avg_Weight", facet = "Condition")
 <!------------------------------------------------------------------------------>
 ### b. Models:
 
-Fitting a simple Welch t-test (using observation-level random effects) since the data is already averaged per nest:
+Fitting a simple linear model with variance varying by Condition (roughly equivalent to a Welch t-test):
 
 ```{r}
-weight_data_pups_teens_nest_agg <- weight_data_pups_teens_nest |> 
-  mutate(
-    dCondition = as.numeric(Condition == "IH"),
-    ID = row_number()
-  )
-```
-
-```{r}
-mod_weight_pups_teens_nest_agg <- afex::mixed(
-  Avg_Weight ~ Condition + (0 + dCondition | ID),
-  data = weight_data_pups_teens_nest_agg,
-  control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.nRE = "ignore"),
-  check_contrasts = F,
-  method = "S",
-  type = 3,
-  test_intercept = FALSE
+mod_weight_pups_teens_nest_agg <- glmmTMB(
+  Avg_Weight ~ Condition,
+  disp = ~ Condition,
+  data = weight_data_pups_teens_nest,
+  family = gaussian("identity"),
+  REML = F
 )
 ```
 
@@ -110,7 +100,7 @@ mod_weight_pups_teens_nest_agg <- afex::mixed(
 
 ```{r}
 parameters::parameters(
-  mod_weight_pups_teens_nest_agg$full_model, drop = "Intercept",
+  mod_weight_pups_teens_nest_agg, drop = "Intercept",
   effects = "fixed", ci_method = "satterthwaite", p_adjust = "none", summary = T, digits = 3
 )
 ```
@@ -118,13 +108,13 @@ parameters::parameters(
 **Main effects (Wald):**
 
 ```{r}
-car::Anova(mod_weight_pups_teens_nest_agg$full_model, type = 3)
+car::Anova(mod_weight_pups_teens_nest_agg, type = 3)
 ```
 
 **Main effects (LRT):**
 
 ```{r}
-LRT(mod_weight_pups_teens_nest_agg$full_model, pred = "Condition")
+LRT(mod_weight_pups_teens_nest_agg, pred = "Condition")
 ```
 
 #### Marginal Effects:
@@ -135,29 +125,29 @@ Marginal Means:
 log.main("===[Observed]===\n")
 
 distribution_summary(
-  insight::get_data(mod_weight_pups_teens_nest_agg$full_model), 
-  dvs = insight::find_response(mod_weight_pups_teens_nest_agg$full_model), 
+  insight::get_data(mod_weight_pups_teens_nest_agg), 
+  dvs = insight::find_response(mod_weight_pups_teens_nest_agg), 
   between = "Condition"
 )
 
 log.main("===[Emmeans]===\n")
 
-emmeans::emmeans(mod_weight_pups_teens_nest_agg$full_model, specs = "Condition", type = "response")
+emmeans::emmeans(mod_weight_pups_teens_nest_agg, specs = "Condition", type = "response")
 ```
 
 Contrasts:
 
 ```{r}
-emmeans::emmeans(mod_weight_pups_teens_nest_agg$full_model, specs = "Condition", type = "response") |> 
+emmeans::emmeans(mod_weight_pups_teens_nest_agg, specs = "Condition", type = "response") |> 
   emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE)
 ```
 
 Plot:
 
 ```{r fig.width = 2, fig.height = 3}
-make_signif_boxplot(mod_weight_pups_teens_nest_agg$full_model, xaxis = "Condition", cluster = NULL, add_averages_by = NULL) |> 
+make_signif_boxplot(mod_weight_pups_teens_nest_agg, xaxis = "Condition", cluster = NULL, add_averages_by = NULL) |> 
   save_png(
-    filename = glue("[{get_model_tag(mod_weight_pups_teens_nest_agg$full_model)}] Boxplots - by [Condition]"), 
+    filename = glue("[{get_model_tag(mod_weight_pups_teens_nest_agg)}] Boxplots - by [Condition]"), 
     subfolder = weight_target, dpi = dpi_save_png, width = 5, height = 8
   )
 ```
