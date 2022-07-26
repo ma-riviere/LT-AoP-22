@@ -371,7 +371,7 @@ load_Weight_Gain <- function(path = config$data$weight_path) {
     |> filter(Stage != "P2") # Removing P2 since it's the point of origin (and thus always 0)
     |> mutate(
       Condition = factor(Condition, levels = c("N", "H"), labels = c("N", "IH")),
-      Stage = factor(Stage, levels = c(paste0("P", 3:10), "P16", "P21")),
+      Stage = factor(Stage, levels = c(paste0("P", 3:11), "P16", "P21")),
       Day = str_extract(Stage, "(\\d{1,2})$") |> as.integer()
     )
     |> select(Mouse, Condition, Sex, Stage, Day, Weight_Gain)

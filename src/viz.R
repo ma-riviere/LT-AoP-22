@@ -307,6 +307,9 @@ make_signif_boxplot <- function(
   
   dat <- insight::get_data(mod) |> group_by(across(any_of(c(xaxis, facet)))) |> mutate(N = glue("N = {get_n_units(cur_data())}")) |> ungroup()
   
+  ## Making sure the variables of interest are contrasts for emmeans
+  dat <- dat |> mutate(across(c(any_of(c(xaxis, facet)) & where(\(c) !is.factor(c))), as.factor))
+  
   max <- max(dat[[resp]])
   min <- min(dat[[resp]])
   amp <- abs(max - min)
@@ -419,6 +422,9 @@ make_signif_boxplot_inter <- function(
   
   dat <- insight::get_data(mod) |> group_by(across(any_of(c(xaxis, facet)))) |> mutate(N = glue("N = {get_n_units(cur_data())}")) |> ungroup()
   
+  ## Making sure the variables of interest are contrasts for emmeans
+  dat <- dat |> mutate(across(c(any_of(c(xaxis, facet)) & where(\(c) !is.factor(c))), as.factor))
+  
   max <- max(dat[[resp]])
   min <- min(dat[[resp]])
   amp <- abs(max - min)
@@ -427,7 +433,6 @@ make_signif_boxplot_inter <- function(
   else correction <- glue::glue("({adjust} corrected)")
   
   # -----------[ Contrasts ]----------- #
-  # WARN: Make sure 'facet' and 'xaxis' are factors
   
   specs <- paste0(" ~ ", xaxis)
   if(!is.null(facet)) specs <- paste0(specs, " | ", facet)
@@ -561,6 +566,9 @@ modeled_temporal_plot <- function(
   
   resp <- insight::find_response(mod)
   data <- insight::get_data(mod)
+  
+  ## Making sure the variables of interest are contrasts for emmeans
+  data <- data |> mutate(across(c(any_of(c(treatment, time)) & where(\(c) !is.factor(c))), as.factor))
   
   emmeans_formula <- paste0("~ ", paste(c(time, treatment), collapse = " | ")) |> as.formula()
   

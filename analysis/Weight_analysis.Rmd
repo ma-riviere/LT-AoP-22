@@ -406,7 +406,7 @@ weight_data_pups_teens_gain |>
 
 ```{r}
 mod_weight_pups_teens_gain <- glmmTMB(
-  formula = Weight_Gain ~ Condition * Stage + ar1(Stage + 0 | Mouse),
+  Weight_Gain ~ Condition * Stage + ar1(Stage + 0 | Mouse),
   family = Gamma("log"),
   data = weight_data_pups_teens_gain,
   REML = T
@@ -549,7 +549,7 @@ predict(mod_weight_pups_teens_gain, type = "response") |>
   bind_cols(insight::get_data(mod_weight_pups_teens_gain)) |>  
   ggplot(aes(x = Stage, y = Predicted, group = Mouse, color = Condition)) +
     geom_line(aes(color = Condition)) +
-    scale_x_discrete(limits = paste0("P", 2:21)) +
+    scale_x_discrete(limits = paste0("P", 3:21)) +
     labs(title = "Mouse-level trajectories") +
     theme(legend.position = "bottom")
 ```
