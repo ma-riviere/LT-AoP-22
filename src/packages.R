@@ -8,9 +8,7 @@ project_pkgs <- c(
   "here", 
   "config", 
   "rlang", 
-  "fs", 
-  "knitr", 
-  "rmarkdown", 
+  "fs",
   "crayon", 
   "usethis",
   
@@ -32,16 +30,18 @@ project_pkgs <- c(
   
   ### Model analysis
   "broom",
-  "easystats/insight",
-  "easystats/datawizard",
+  "insight",
+  "datawizard",
   "performance",
-  "qqplotr", # Required by performance
+  "qqplotr",           # Required by performance
   "correlation",
-  "easystats/parameters",
+  "psych",             # For categorical correlations
+  "parameters",
   "DHARMa",
   "emmeans",
   
   ### Visualizations
+  "wilkelab/gridtext", # Fixing Markdown display issue with R4.2+
   "ggplot2",
   "ggtext",
   "patchwork",
@@ -51,9 +51,12 @@ project_pkgs <- c(
 
   ### Reporting
   "gt",
+  "knitr",
+  "rmarkdown",
   "quarto",
   "downlit", # For code linking
   "xml2", # For code linking
+  "sessioninfo",
   
   ### Misc
   "glue", 

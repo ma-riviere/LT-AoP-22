@@ -65,26 +65,25 @@ temporal_plot(data, resp = current_response, pred = "Condition", time = pred2)
 ```
 
 
-<!------------------------------------------------------------------------------>
 ### Models & Diagnostics
 
 ```{r}
-#| eval: !expr (!is_temporal)
+#| eval: false
 #| echo: false
 #| output: asis
 
-cat("#### Welch t-test\n\n
+cat("❖ Welch t-test\n\n
 :::{.callout-note}\n
 Not used in the paper, shown for reference.\n\n
-\n
-We mimic a Welch t-test using a mixed-effects model and observation-level random effects.\n
 :::\n
 ")
 ```
 
 ```{r}
-#| eval: !expr (!is_temporal)
-#| echo: !expr (!is_temporal)
+#| eval: false
+#| echo: false
+
+## We mimic a Welch t-test using a mixed-effects model and observation-level random effects.
 
 mod_agg <- afex::mixed(
   paste0(current_response, " ~ Condition + (0 + dCondition | ID)"),
@@ -98,7 +97,7 @@ mod_agg <- afex::mixed(
 ```
 
 ```{r}
-#| eval: !expr (!is_temporal)
+#| eval: false
 #| echo: false
 #| output: asis
 
@@ -109,11 +108,9 @@ parameters::parameters(
 ```
 
 
-#### Generalized Linear Mixed Models
+Exploring some Generalized Linear (Mixed) model candidates:
 
-Exploring candidate models:
-
-::: {.panel-tabset}
+:::{.panel-tabset}
 
 ```{r}
 #| echo: false
@@ -130,7 +127,6 @@ purrr::map(
 
 :::
 
-<!------------------------------------------------------------------------------>
 ### Effects Analysis
 
 ```{r}

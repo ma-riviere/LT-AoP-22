@@ -210,3 +210,8 @@ knit_print.gt_tbl <- function(x, options, ...) {
   cat('</div>\n\n')
 }
 registerS3method("knit_print", "gt_tbl", knit_print.gt_tbl)
+
+knit_print.data.frame <- function(x, options, ...) {
+  rmarkdown::paged_table(x, options) |> rmarkdown:::print.paged_df()
+}
+registerS3method("knit_print", "data.frame", knit_print.data.frame)

@@ -113,9 +113,7 @@ performance::check_zeroinflation(mod)
 
 ❖ **Predictions:**
 
-:::{.callout-note}
 Simulating data from the model for pseudo "Posterior Predictive" plots.
-:::
 
 ```{r}
 #| echo: false
@@ -124,7 +122,7 @@ mod_dharma <- DHARMa::simulateResiduals(mod, n = 100, plot = FALSE)
 mod_dharma_t <- t(mod_dharma$simulatedResponse)
 ```
 
-♦ Simulated data vs observed data:
+♦ _Simulated data vs observed data:_
 
 ```{r}
 #| echo: false
@@ -153,7 +151,7 @@ purrr::map(
 ) |> unlist() |> cat(sep = '\n')
 ```
 
-♦ Simulated statistics vs observed ones:
+♦ _Simulated statistics vs observed ones:_
 
 ```{r}
 #| echo: false
@@ -185,12 +183,11 @@ purrr::map(
 
 ```{r}
 #| echo: false
-#| output: asis
 
 outliers <- insight::get_data(mod) |> rownames_to_column("ID") |> filter(ID %in% DHARMa::outliers(mod_dharma))
 
 if (nrow(outliers) >= 1) {
-  print_html(outliers)
+  outliers
 } else {
   cat("No potential outliers detected by the model.")
 }

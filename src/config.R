@@ -26,8 +26,8 @@ knitr::opts_chunk$set(
   warning = FALSE,
   message = FALSE,
   fig.align = "center",
-  fig.retina = 2,
-  dpi = 300,
+  # fig.retina = 2,
+  dpi = 250,
   dev = 'svg',
   dev.args = list(bg = "transparent")
 )

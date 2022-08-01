@@ -22,7 +22,7 @@ source(here::here("src", "init.R"), echo = FALSE)
 
 pkg_sesh <- sessioninfo::session_info(pkgs = "attached")
 
-pkg_sesh$platform$quarto <- paste(system("quarto --version", intern = TRUE), "@", quarto::quarto_path())
+pkg_sesh$platform$quarto <- system("quarto --version", intern = TRUE)
 
 pkg_sesh
 ```
