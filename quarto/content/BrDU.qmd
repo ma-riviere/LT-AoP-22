@@ -7,6 +7,8 @@
 source(here::here("src", "init.R"), echo = FALSE)
 ```
 
+❖ **Data**
+
 ```{r}
 #| echo: false
 
@@ -28,22 +30,9 @@ contrasts(data$Condition) <- contr.treatment
 ### Variables:
 
 Dens_BrDU_name <- "Density of BrDU^(+) cells  \n *(10^(-5) cells/μm^(3))*"
+
+data
 ```
-
-❖ **Data**
-
-```{r}
-#| echo: false
-#| output: asis
-
-n_samp <- 15
-
-gt(data |> head(n_samp))
-```
-
-(*Sample of `r n_samp` data points*)
-
-❖ **Correlations**
 
 ```{r}
 #| echo: false

@@ -9,6 +9,8 @@
 source(here::here("src", "init.R"), echo = FALSE)
 ```
 
+❖ **Data**
+
 ```{r}
 #| echo: false
 
@@ -33,22 +35,9 @@ contrasts(data$Z) <- contr.sum
 A_ML_name <- "Molecular layer area *(10^(-4) μm^(2))*"
 A_DAPI_name <- "Area marked with DAPI *(10^(-4) μm^(2))*"
 Vol_DAPI_name <- "Volume of DAPI marking *(10^(-4) μm^(3))*"
+
+data
 ```
-
-❖ **Data**
-
-```{r}
-#| echo: false
-#| output: asis
-
-n_samp <- 15
-
-gt(data |> head(n_samp))
-```
-
-(*Sample of `r n_samp` data points*)
-
-❖ **Correlations**
 
 ```{r}
 #| echo: false

@@ -7,6 +7,8 @@
 source(here::here("src", "init.R"), echo = FALSE)
 ```
 
+❖ **Data**
+
 ```{r}
 #| echo: false
 
@@ -33,22 +35,9 @@ N_IGL_WM_name <- "Number of cleaved caspase 3^(+) cells  \n in the IGL and WM ar
 Dens_IGL_WM_name <- "Density of cleaved caspase 3^(+) cells  \n in the IGL and WM areas *(Cells/μm²)*"
 C_IGL_WM_name <- "Area of cleaved caspase 3^(+) marking  \n in the IGL and WM areas *(μm²)*"
 Prop_C_IGL_WM_name <- "Proportion of cleaved caspase 3^(+) marking  \n in the IGL and WM areas"
+
+data
 ```
-
-❖ **Data**
-
-```{r}
-#| echo: false
-#| output: asis
-
-n_samp <- 15
-
-gt(data |> head(n_samp))
-```
-
-(*Sample of `r n_samp` data points*)
-
-❖ **Correlations**
 
 ```{r}
 #| echo: false

@@ -7,6 +7,8 @@
 source(here::here("src", "init.R"), echo = FALSE)
 ```
 
+❖ **Data**
+
 ```{r}
 #| echo: false
 
@@ -20,22 +22,9 @@ Time_GR_name <- "Latency to fall *(s)*"
 
 contrasts(data$Condition) <- contr.sum
 contrasts(data$Stage) <- contr.sum
+
+data
 ```
-
-❖ **Data**
-
-```{r}
-#| echo: false
-#| output: asis
-
-n_samp <- 15
-
-gt(data |> head(n_samp))
-```
-
-(*Sample of `r n_samp` data points*)
-
-❖ **Correlations**
 
 ```{r}
 #| echo: false

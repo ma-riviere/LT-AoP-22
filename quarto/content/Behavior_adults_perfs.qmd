@@ -7,6 +7,8 @@
 source(here::here("src", "init.R"), echo = FALSE)
 ```
 
+❖ **Data**
+
 ```{r}
 #| echo: false
 
@@ -55,22 +57,9 @@ Nbr_Entry_Open_name   <- "Number of Entries in Open Arms"
 Nbr_Entry_Closed_name <- "Number of Entries in Closed Arms"
 
 contrasts(data$Condition) <- contr.treatment
+
+data
 ```
-
-❖ **Data**
-
-```{r}
-#| echo: false
-#| output: asis
-
-n_samp <- 15
-
-gt(data |> head(n_samp))
-```
-
-(*Sample of `r n_samp` data points*)
-
-❖ **Correlations**
 
 ```{r}
 #| echo: false

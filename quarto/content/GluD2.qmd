@@ -7,6 +7,8 @@
 source(here::here("src", "init.R"), echo = FALSE)
 ```
 
+❖ **Data**
+
 ```{r}
 #| echo: false
 
@@ -33,22 +35,9 @@ Vol_GLUD2_name  <- "Gluδ2-labelled Parallel fiber volume  \n in the ML *(10^(-5
 
 A_DD_name  <- "Purkinje dendrite area *(10^(-4) μm^(2))*"
 A_DD_per_cell_name  <- "Purkinje dendrite area *(10^(-4) μm^(2))*  \n per Purkinje cell"
+
+data
 ```
-
-❖ **Data**
-
-```{r}
-#| echo: false
-#| output: asis
-
-n_samp <- 15
-
-gt(data |> head(n_samp))
-```
-
-(*Sample of `r n_samp` data points*)
-
-❖ **Correlations**
 
 ```{r}
 #| echo: false

@@ -7,6 +7,8 @@
 source(here::here("src", "init.R"), echo = FALSE)
 ```
 
+❖ **Data**
+
 ```{r}
 #| echo: false
 
@@ -33,22 +35,9 @@ N_EGL_name <- "Number of cleaved caspase 3^(+) cells  \n in the EGL area"
 Dens_EGL_name <- "Density of cleaved caspase 3^(+) cells  \n in the EGL area *(Cells/μm²)*"
 C_EGL_name <- "Area of cleaved caspase 3^(+) marking  \n in the EGL *(μm²)*"
 Prop_C_EGL_name <- "Proportion of cleaved caspase 3^(+) marking  \n in the EGL area"
+
+data
 ```
-
-❖ **Data**
-
-```{r}
-#| echo: false
-#| output: asis
-
-n_samp <- 15
-
-gt(data |> head(n_samp))
-```
-
-(*Sample of `r n_samp` data points*)
-
-❖ **Correlations**
 
 ```{r}
 #| echo: false

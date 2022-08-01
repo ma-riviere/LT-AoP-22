@@ -37,33 +37,33 @@ book:
   chapters:
     - index.qmd
     - quarto/content/ROS.qmd
-    # - part: quarto/content/Casp.qmd
-    #   chapters:
-    #     - quarto/content/Casp_P12_Tot.qmd
-    #     - quarto/content/Casp_P12_EGL.qmd
-    #     - quarto/content/Casp_P12_ML_PCL.qmd
-    #     - quarto/content/Casp_P12_IGL_WM.qmd
-    #     - quarto/content/Casp_Act.qmd
-    # - quarto/content/BrDU.qmd
-    # - quarto/content/Thickness.qmd
-    # - part: "Calbindin"
-    #   chapters:
-    #     - quarto/content/Calb_P12.qmd
-    #     - quarto/content/Calb_P21.qmd
-    # - part: "Weight"
-    #   chapters:
-    #     - quarto/content/Weight_pups_teens.qmd
-    #     - quarto/content/Weight_adults.qmd
-    # - part: "Behavior"
-    #   chapters:
-    #     - quarto/content/Behavior_pups.qmd
-    #     - quarto/content/Behavior_teens.qmd
-    #     - quarto/content/Behavior_adults_morris.qmd
-    #     - quarto/content/Behavior_adults_perfs.qmd
-    # - quarto/content/VGlut.qmd
-    # - quarto/content/GluD2.qmd
-    # - quarto/content/MBP.qmd
-    # - quarto/content/DAPI.qmd
+    - part: quarto/content/Casp.qmd
+      chapters:
+        - quarto/content/Casp_P12_Tot.qmd
+        - quarto/content/Casp_P12_EGL.qmd
+        - quarto/content/Casp_P12_ML_PCL.qmd
+        - quarto/content/Casp_P12_IGL_WM.qmd
+        - quarto/content/Casp_Act.qmd
+    - quarto/content/BrDU.qmd
+    - quarto/content/Thickness.qmd
+    - part: "Calbindin"
+      chapters:
+        - quarto/content/Calb_P12.qmd
+        - quarto/content/Calb_P21.qmd
+    - part: "Weight"
+      chapters:
+        - quarto/content/Weight_pups_teens.qmd
+        - quarto/content/Weight_adults.qmd
+    - part: "Behavior"
+      chapters:
+        - quarto/content/Behavior_pups.qmd
+        - quarto/content/Behavior_teens.qmd
+        - quarto/content/Behavior_adults_morris.qmd
+        - quarto/content/Behavior_adults_perfs.qmd
+    - quarto/content/VGlut.qmd
+    - quarto/content/GluD2.qmd
+    - quarto/content/MBP.qmd
+    - quarto/content/DAPI.qmd
     - quarto/about.qmd
   
   page-footer: 

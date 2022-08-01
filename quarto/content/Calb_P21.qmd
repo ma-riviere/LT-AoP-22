@@ -7,6 +7,8 @@
 source(here::here("src", "init.R"), echo = FALSE)
 ```
 
+❖ **Data**
+
 ```{r}
 #| echo: false
 
@@ -32,22 +34,9 @@ N_CC_name <- "Number of Purkinje cell bodies  \n *(per 413x10^(3) µm^(3))*"
 A_ML_name <- "Area of the ML *(10^(-4) µm^(2))*"
 A_PC_per_cell_name <- "Purkinje dendrite area *(10^(-4) µm^(2))*  \n per Purkinje cell body"
 Vol_PC_per_cell_name <- "Purkinje dendrite volume *(10^(-4) µm^(3))*  \n per Purkinje cell body"
+
+data
 ```
-
-❖ **Data**
-
-```{r}
-#| echo: false
-#| output: asis
-
-n_samp <- 15
-
-gt(data |> head(n_samp))
-```
-
-(*Sample of `r n_samp` data points*)
-
-❖ **Correlations**
 
 ```{r}
 #| echo: false

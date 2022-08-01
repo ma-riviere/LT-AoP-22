@@ -7,14 +7,14 @@
 source(here::here("src", "init.R"), echo = FALSE)
 ```
 
+❖ **Data**
+
 ```{r}
 #| echo: false
 
 data <- load_ROS(config$data$ROS_path)
 
-data_agg <- mutate(data, dCondition = as.numeric(Condition == "IH")) |> rowid_to_column("ID")
-
-### Variables:
+data_agg <- mutate(data, dCondition = as.numeric(Condition == "IH"), ID = row_number())
 
 responses <- c("ROS_perc")
 predictors <- c("Condition")
@@ -22,22 +22,9 @@ predictors <- c("Condition")
 ROS_perc_name <- "ROS  \n *(% of control)*"
 
 contrasts(data$Condition) <- contr.treatment
+
+data
 ```
-
-❖ **Data**
-
-```{r}
-#| echo: false
-#| output: asis
-
-n_samp <- 15
-
-gt(data |> head(n_samp))
-```
-
-(*Sample of `r n_samp` data points*)
-
-❖ **Correlations**
 
 ```{r}
 #| echo: false

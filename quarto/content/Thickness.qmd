@@ -7,6 +7,8 @@
 source(here::here("src", "init.R"), echo = FALSE)
 ```
 
+❖ **Data**
+
 ```{r}
 #| echo: false
 
@@ -35,22 +37,9 @@ Thick_Total_name <- "Total thickness of the cerebellar cortex *(µm)*"
 Thick_EGL_name <- "EGL thickness *(µm)*"
 Thick_MLPL_name <- "ML+PL thickness *(µm)*"
 Thick_IGL_name <- "IGL thickness *(µm)*"
+
+data
 ```
-
-❖ **Data**
-
-```{r}
-#| echo: false
-#| output: asis
-
-n_samp <- 15
-
-gt(data |> head(n_samp))
-```
-
-(*Sample of `r n_samp` data points*)
-
-❖ **Correlations**
 
 ```{r}
 #| echo: false
