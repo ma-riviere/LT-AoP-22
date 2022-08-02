@@ -36,6 +36,17 @@ Vol_Fil_name <- "Volume of myelinated fibers *(10^(-4) μm^(3))*"
 data
 ```
 
+❖ **Description**
+
+```{r}
+#| echo: false
+#| output: asis
+
+describe_variables(data)
+```
+
+❖ **Correlations**
+
 ```{r}
 #| echo: false
 #| output: asis
@@ -75,8 +86,6 @@ models <- list(
   glmmTMB(Area_Fil ~ Condition + (1 | Mouse), family = Gamma("log"), data = data, REML = TRUE), 
   glmmTMB(Area_Fil ~ Condition + (1 | Mouse), family = gaussian("log"), data = data, REML = TRUE)
 )
-
-template_output <- knitr::knit_child(config$templates$base, quiet = TRUE)
 ```
 
 ```{r}
@@ -97,8 +106,6 @@ models <- list(
   glmmTMB(Vol_Fil ~ Condition + (1 | Mouse), family = Gamma("log"), data = data, REML = TRUE), 
   glmmTMB(Vol_Fil ~ Condition + (1 | Mouse), family = gaussian("log"), data = data, REML = TRUE)
 )
-
-template_output <- knitr::knit_child(config$templates$base, quiet = TRUE)
 ```
 
 ```{r}

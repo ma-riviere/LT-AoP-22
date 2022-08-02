@@ -1,4 +1,4 @@
-# Weight [Pups & Teens]
+# Weight [Nest]
 
 ```{r}
 #| echo: false
@@ -12,15 +12,12 @@ source(here::here("src", "init.R"), echo = FALSE)
 ```{r}
 #| echo: false
 
-responses <- c("Weight_Gain")
-predictors <- c("Condition", "Stage")
+responses <- c("Avg_Weight")
+predictors <- c("Condition")
 
-data <- load_Weight_Gain()
+data <- load_Weight_Nest()
 
-contrasts(data$Condition) <- contr.sum
-contrasts(data$Stage) <- contr.sum
-
-Weight_Gain_name <- "Weight gain between two successive stages  \n (starting at P2) *(g)*"
+Avg_Weight_name <- "Average weight of Pups per Nest at P0 *(g)*"
 
 data
 ```
@@ -41,24 +38,23 @@ describe_variables(data)
 #| output: asis
 #| fig.width: 8
 
-corr_matrix_plot(data, vars = c(c(predictors, "Mouse"), responses))
+corr_matrix_plot(data, vars = c(predictors, responses))
 ```
 
 
-## Weight evolution in time (Pups & Teens)
+## Average Pup weight at P0 (based on nest weight)
 
 ```{r}
 #| echo: false
 
-is_temporal <- TRUE
-
 ## WARN: Always put the chosen model in first position
 models <- list(
   glmmTMB(
-    Weight_Gain ~ Condition * Stage + ar1(Stage + 0 | Mouse),
-    family = Gamma("log"),
+    Avg_Weight ~ Condition,
+    disp = ~ Condition,
     data = data,
-    REML = TRUE
+    family = gaussian("identity"),
+    REML = FALSE
   )
 )
 ```

@@ -39,6 +39,17 @@ Prop_C_Tot_name <- "Proportion of cleaved caspase 3^(+) marking  \n in the whole
 data
 ```
 
+❖ **Description**
+
+```{r}
+#| echo: false
+#| output: asis
+
+describe_variables(data)
+```
+
+❖ **Correlations**
+
 ```{r}
 #| echo: false
 #| output: asis

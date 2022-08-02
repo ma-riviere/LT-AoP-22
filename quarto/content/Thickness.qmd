@@ -41,6 +41,17 @@ Thick_IGL_name <- "IGL thickness *(µm)*"
 data
 ```
 
+❖ **Description**
+
+```{r}
+#| echo: false
+#| output: asis
+
+describe_variables(data)
+```
+
+❖ **Correlations**
+
 ```{r}
 #| echo: false
 #| output: asis

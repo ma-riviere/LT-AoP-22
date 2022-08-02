@@ -34,6 +34,17 @@ Dens_BrDU_name <- "Density of BrDU^(+) cells  \n *(10^(-5) cells/μm^(3))*"
 data
 ```
 
+❖ **Description**
+
+```{r}
+#| echo: false
+#| output: asis
+
+describe_variables(data)
+```
+
+❖ **Correlations**
+
 ```{r}
 #| echo: false
 #| output: asis

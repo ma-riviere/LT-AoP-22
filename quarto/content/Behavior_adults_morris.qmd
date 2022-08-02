@@ -32,6 +32,17 @@ contrasts(data$Stage) <- contr.sum
 data
 ```
 
+❖ **Description**
+
+```{r}
+#| echo: false
+#| output: asis
+
+describe_variables(data)
+```
+
+❖ **Correlations**
+
 ```{r}
 #| echo: false
 #| output: asis

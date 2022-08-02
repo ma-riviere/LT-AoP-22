@@ -23,7 +23,9 @@ if (is_temporal) effects_template_path <- config$templates$effects_temporal
 
 dist_data <- distribution_summary(data, dvs = current_response, between = current_predictor_set) |> select(-Variable)
 
-gt::gt(dist_data) |> format_gt()
+gt::gt(dist_data) |> 
+  tab_row_group(label = "Intermittent Hypoxia", rows = Condition == "IH", id = "IH") |> 
+  tab_row_group(label = "Normoxia", rows = Condition == "N", id = "N")
 ```
 
 ```{r}
@@ -251,7 +253,7 @@ Our `LRT()` method removes the predictor *plus* all its interactions
 
 #### Marginal Effects
 
-Marginal means & Contrasts of each predictor:
+Marginal means & Contrasts for each predictor:
 
 ::: {.panel-tabset}
 
@@ -259,12 +261,18 @@ Marginal means & Contrasts of each predictor:
 #| echo: false
 #| output: asis
 
-preds <- c(insight::find_predictors(mod)$conditional, insight::find_interactions(mod)$conditional)
+preds_and_inters <- (union(
+    insight::find_predictors(mod, effects = "fixed", component = "conditional")$conditional, 
+    insight::find_interactions(mod, component = "conditional")$conditional
+  ) 
+  |> setdiff(insight::find_offset(mod)) 
+  |> stringr::str_replace_all("[1-9]", "")
+)
 
 purrr::map(
-  seq(1, length(preds)),
+  seq(1, length(preds_and_inters)),
   \(i) {
-    pred <- stringr::str_replace_all(preds[[i]], "[1-9]", "")
+    pred <- preds_and_inters[[i]]
     knitr::knit_child(effects_template_path, quiet = TRUE, envir = new.env(parent = environment()))
   }
 ) |> unlist() |> cat(sep = '\n')

@@ -1,0 +1,97 @@
+# DAPI [All layers - P12]
+
+*Di-Amidino-2-Phenyl-Indole*
+
+```{r}
+#| echo: false
+#| output: false
+
+source(here::here("src", "init.R"), echo = FALSE)
+```
+
+❖ **Data**
+
+```{r}
+#| echo: false
+
+data <- load_dapi_density_P12(config$data$dapi_density_P12_path)
+
+responses <- c("Nb_Vol", "Avg_Distance")
+predictors <- c("Condition", "Mouse", "Layer")
+
+# data_agg <- (data
+#   |> group_by(Mouse, Condition) 
+#   |> summarize(across(matches(responses), .fns = \(.x) mean(.x, na.rm = T))) 
+#   |> ungroup() 
+#   |> mutate(dCondition = as.numeric(Condition == "IH")) 
+#   |> rowid_to_column("ID")
+# )
+
+contrasts(data$Condition) <- contr.sum
+contrasts(data$Mouse) <- contr.sum
+contrasts(data$Layer) <- contr.sum
+
+Nb_Vol_name <- "Cell density *(10^(-2) cell number/μm^(3))*"
+Avg_Distance_name <- "Average distance between cells *(μm)*"
+
+data
+```
+
+❖ **Description**
+
+```{r}
+#| echo: false
+#| output: asis
+
+describe_variables(data)
+```
+
+❖ **Correlations**
+
+```{r}
+#| echo: false
+#| output: asis
+#| fig.width: 8
+
+corr_matrix_plot(data, vars = c(predictors, responses))
+```
+
+
+## Cell Density (Volume)
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Nb_Vol ~ Condition * Layer + (1 | Mouse), family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(Nb_Vol ~ Condition * Layer + (1 | Mouse), family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```
+
+
+## Average distance between cells
+
+```{r}
+#| echo: false
+
+## WARN: Always put the chosen model in first position
+models <- list(
+  glmmTMB(Avg_Distance ~ Condition * Layer + (1 | Mouse), family = Gamma("log"), data = data, REML = TRUE), 
+  glmmTMB(Avg_Distance ~ Condition * Layer + (1 | Mouse), family = gaussian("log"), data = data, REML = TRUE)
+)
+```
+
+```{r}
+#| echo: false
+#| output: asis
+
+knitr::knit_child(config$templates$base, quiet = TRUE) |> unlist() |> cat(sep = '\n')
+```

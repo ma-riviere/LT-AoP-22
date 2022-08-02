@@ -8,6 +8,7 @@ default:
     calb_P21_path: !expr here::here("data", "Calb_P21.xlsx")
     brDU_path: !expr here::here("data", "BrDU.xlsx")
     dapi_ml_ad_path: !expr here::here("data", "DAPI_ML_Adult.xlsx")
+    dapi_density_P12_path: !expr here::here("data", "DAPI_Density_P12.xlsx")
     casp_Act_path: !expr here::here("data", "Casp3_raw_long.xlsx")
     weight_path: !expr here::here("data", "Weight.xlsx")
     behavior_pups_path: !expr here::here("data", "Behavior_Pups_Long.xlsx")

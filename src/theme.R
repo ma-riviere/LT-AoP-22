@@ -112,7 +112,7 @@ format_gt <- function(gt_tbl) {
   gt_tbl <- gt::fmt(
     gt_tbl,
     columns = select(gt_tbl[["_data"]], matches("p.val|^pr|pr\\(.*\\)|^p$")) |> colnames(),
-    fns = \(x) purrr::map_chr(x, \(v) ifelse(!is.na(v) && utils::type.convert(v, as.is = TRUE) |> is.numeric(), format_pvalue(as.numeric(v)), v))
+    fns = \(x) purrr::map_chr(x, \(v) ifelse(!is.na(v) && utils::type.convert(v, as.is = TRUE) |> is.numeric(), label_pval(as.numeric(v)), v))
   )
   
   gt_tbl <- gt::fmt_number(
@@ -121,61 +121,74 @@ format_gt <- function(gt_tbl) {
     decimals = 3, drop_trailing_zeros = TRUE # n_signif = 2
   )
   
-  return(gt::opt_row_striping(gt_tbl))
+  # gt_tbl <- gt::fmt_markdown(
+  #   gt_tbl,
+  #   columns = select(gt_tbl[["_data"]], where(\(v) is.character(v)) & !matches("p.val|^pr|pr\\(.*\\)|^p$")) |> colnames()
+  # )
+  
+  return(gt_tbl)
 }
 
 gt_style_light <- function(gt_tbl) {
-  return(
-    gt_tbl 
+  gt_tbl <- (gt_tbl 
     |> format_gt()
     |> gt::tab_style(
-      style = list(
-        cell_fill(color = bg_color_light, alpha = 1),
-        cell_text(color = secondary_color_light, weight = "bold"),
-        cell_borders(sides = c("top", "bottom"), color = secondary_color_light, style = "solid", weight = px(2))
-      ),
-      locations = list(cells_title(), cells_column_labels())
+     style = list(
+       cell_fill(color = bg_color_light, alpha = 1),
+       cell_text(color = secondary_color_light, weight = "bold"),
+       cell_borders(sides = c("top", "bottom"), color = secondary_color_light, style = "solid", weight = px(2))
+     ),
+     locations = list(cells_title(), cells_column_labels())
     ) 
     |> gt::tab_style(
-      style = list(
-        cell_fill(color = bg_color_light, alpha = 1),
-        cell_text(color = primary_color_light)
-      ),
-      locations = list(cells_stub(), cells_body(), cells_row_groups(), cells_footnotes(), cells_source_notes())
+     style = list(
+       cell_fill(color = bg_color_light, alpha = 1),
+       cell_text(color = primary_color_light)
+     ),
+     locations = list(cells_stub(), cells_body(), cells_row_groups(), cells_footnotes(), cells_source_notes())
     )
     |> gt::tab_style(
-      style = list(cell_text(weight = "bold")),
-      locations = list(cells_row_groups())
+     style = list(cell_text(weight = "bold")),
+     locations = list(cells_row_groups())
     )
     |> gt::tab_options(container.width = pct(100), table.width = pct(100))
   )
+  
+  if (nrow(gt_tbl[["_data"]]) > 2) 
+    gt_tbl <- gt_tbl |> gtExtras::gt_highlight_rows(rows = seq(2, nrow(gt_tbl[["_data"]]), by = 2), fill = "#E9E9E9", font_weight = "normal")
+  
+  return(gt_tbl)
 }
 
 gt_style_dark <- function(gt_tbl) {
-  return(
-    gt_tbl 
+  gt_tbl <- (gt_tbl 
     |> format_gt()
     |> gt::tab_style(
-      style = list(
-        cell_fill(color = bg_color_dark, alpha = 1),
-        cell_text(color = secondary_color_dark, weight = "bold"),
-        cell_borders(sides = c("top", "bottom"), color = secondary_color_dark, style = "solid", weight = px(2))
-      ),
-      locations = list(cells_title(), cells_column_labels())
+     style = list(
+       cell_fill(color = bg_color_dark, alpha = 1),
+       cell_text(color = secondary_color_dark, weight = "bold"),
+       cell_borders(sides = c("top", "bottom"), color = secondary_color_dark, style = "solid", weight = px(2))
+     ),
+     locations = list(cells_title(), cells_column_labels())
     ) 
     |> gt::tab_style(
-      style = list(
-        cell_fill(color = bg_color_dark, alpha = 1),
-        cell_text(color = primary_color_dark)
-      ),
-      locations = list(cells_stub(), cells_body(), cells_row_groups(), cells_footnotes(), cells_source_notes())
+     style = list(
+       cell_fill(color = bg_color_dark, alpha = 1),
+       cell_text(color = primary_color_dark)
+     ),
+     locations = list(cells_stub(), cells_body(), cells_row_groups(), cells_footnotes(), cells_source_notes())
     )
     |> gt::tab_style(
-      style = list(cell_text(weight = "bold")),
-      locations = list(cells_row_groups())
+     style = list(cell_text(weight = "bold")),
+     locations = list(cells_row_groups())
     )
     |> gt::tab_options(container.width = pct(100), table.width = pct(100))
   )
+  
+  if (nrow(gt_tbl[["_data"]]) > 2) 
+    gt_tbl <- gt_tbl |> gtExtras::gt_highlight_rows(rows = seq(2, nrow(gt_tbl[["_data"]]), by = 2), fill = "#1e1e1e", font_weight = "normal")
+  
+  return(gt_tbl)
 }
 
 #--------------------------#

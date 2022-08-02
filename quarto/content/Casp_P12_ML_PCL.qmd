@@ -39,6 +39,17 @@ Prop_C_ML_PCL_name <- "Proportion of cleaved caspase 3^(+) cells marking  \n in 
 data
 ```
 
+❖ **Description**
+
+```{r}
+#| echo: false
+#| output: asis
+
+describe_variables(data)
+```
+
+❖ **Correlations**
+
 ```{r}
 #| echo: false
 #| output: asis

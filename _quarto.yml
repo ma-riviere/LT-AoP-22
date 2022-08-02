@@ -52,6 +52,7 @@ book:
         - quarto/content/Calb_P21.qmd
     - part: "Weight"
       chapters:
+        - quarto/content/Weight_nest.qmd
         - quarto/content/Weight_pups_teens.qmd
         - quarto/content/Weight_adults.qmd
     - part: "Behavior"
@@ -60,10 +61,13 @@ book:
         - quarto/content/Behavior_teens.qmd
         - quarto/content/Behavior_adults_morris.qmd
         - quarto/content/Behavior_adults_perfs.qmd
+    - part: "DAPI"
+      chapters:
+        - quarto/content/DAPI_All_P12.qmd
+        - quarto/content/DAPI_ML_AD.qmd
     - quarto/content/VGlut.qmd
     - quarto/content/GluD2.qmd
     - quarto/content/MBP.qmd
-    - quarto/content/DAPI.qmd
     - quarto/about.qmd
   
   page-footer: 

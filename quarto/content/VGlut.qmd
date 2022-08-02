@@ -43,6 +43,17 @@ N_CC_name <- "Number of Purkinje cell bodies  \n *(per 413x10^3 μm^(3))*"
 data
 ```
 
+❖ **Description**
+
+```{r}
+#| echo: false
+#| output: asis
+
+describe_variables(data)
+```
+
+❖ **Correlations**
+
 ```{r}
 #| echo: false
 #| output: asis

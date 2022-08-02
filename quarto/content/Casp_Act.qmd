@@ -43,6 +43,17 @@ Fluo_Norm_name <- "Enzymatic Activity of Caspase 3/7  \n *(Normalized Fluorescen
 data
 ```
 
+❖ **Description**
+
+```{r}
+#| echo: false
+#| output: asis
+
+describe_variables(data)
+```
+
+❖ **Correlations**
+
 ```{r}
 #| echo: false
 #| output: asis

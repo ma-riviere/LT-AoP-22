@@ -8,7 +8,7 @@ is_count <- ifelse(insight::get_family(mod)$family |> str_detect("binom|pois"), 
 has_re <- !is.null(insight::find_random(mod))
 has_zeroes <- 0 %in% insight::get_response(mod)
 
-current_preds <- insight::find_predictors(mod)$conditional
+current_preds <- insight::find_predictors(mod, effects = "fixed", component = "conditional")$conditional |> setdiff(insight::find_offset(mod)) 
 ```
 
 #### `r get_model_family(mod)`

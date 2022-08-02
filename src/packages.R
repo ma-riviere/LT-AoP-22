@@ -51,6 +51,7 @@ project_pkgs <- c(
 
   ### Reporting
   "gt",
+  "gtExtras",
   "knitr",
   "rmarkdown",
   "quarto",

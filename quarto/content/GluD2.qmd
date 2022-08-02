@@ -39,6 +39,17 @@ A_DD_per_cell_name  <- "Purkinje dendrite area *(10^(-4) μm^(2))*  \n per Purki
 data
 ```
 
+❖ **Description**
+
+```{r}
+#| echo: false
+#| output: asis
+
+describe_variables(data)
+```
+
+❖ **Correlations**
+
 ```{r}
 #| echo: false
 #| output: asis

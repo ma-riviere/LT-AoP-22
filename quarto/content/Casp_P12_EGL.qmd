@@ -39,6 +39,17 @@ Prop_C_EGL_name <- "Proportion of cleaved caspase 3^(+) marking  \n in the EGL a
 data
 ```
 
+❖ **Description**
+
+```{r}
+#| echo: false
+#| output: asis
+
+describe_variables(data)
+```
+
+❖ **Correlations**
+
 ```{r}
 #| echo: false
 #| output: asis

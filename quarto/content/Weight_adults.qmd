@@ -15,17 +15,26 @@ source(here::here("src", "init.R"), echo = FALSE)
 responses <- c("Weight")
 predictors <- c("Condition", "Stage")
 
-data <- load_Weights(config$data$weight_path, "Adults") # |> mutate(Day = datawizard::center(Day))
+data <- load_Weight(age = "Adults")
 
 contrasts(data$Condition) <- contr.sum
 contrasts(data$Stage) <- contr.sum
-
-### Variables:
 
 Weight_name <- "Mouse Weight *(g)*"
 
 data
 ```
+
+❖ **Description**
+
+```{r}
+#| echo: false
+#| output: asis
+
+describe_variables(data)
+```
+
+❖ **Correlations**
 
 ```{r}
 #| echo: false

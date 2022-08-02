@@ -38,6 +38,17 @@ Vol_PC_per_cell_name <- "Purkinje dendrite volume *(10^(-4) µm^(3))*  \n per Pu
 data
 ```
 
+❖ **Description**
+
+```{r}
+#| echo: false
+#| output: asis
+
+describe_variables(data)
+```
+
+❖ **Correlations**
+
 ```{r}
 #| echo: false
 #| output: asis

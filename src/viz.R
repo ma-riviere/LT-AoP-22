@@ -2,6 +2,12 @@
 #### Visualizations ####
 #======================#
 
+Condition_name <- "Hypoxia condition: Normoxia (N) vs Intermittent Hypoxia (IH)"
+Mouse_name <- "Mouse unique identifier"
+Z_name <- "Bregma coordinates (Ant, Med, Post)"
+Layer_name <- "Cerebellar layer"
+Stage_name <- "Developmental stage"
+
 #-----------#
 #### EDA ####
 #-----------#
@@ -23,7 +29,7 @@ corr_matrix_plot <- function(df, vars) {
     scale_x_discrete(position = "top") +
     scale_y_discrete(limits = rev) +
     guides(fill = guide_colourbar(title = "R", barheight = rel(17), title.hjust = 0.15), colour = "none") +
-    labs(title = "Correlation Matrix", x = "", y = "") +
+    labs(title = "", x = "", y = "") +
     theme(
       plot.title = element_markdown(hjust = 0.5),
       axis.title.x = element_blank(),
@@ -48,11 +54,12 @@ hist_plot <- function(.df, var, facet = "Condition", facet2 = NULL, resp_name = 
     theme(
       legend.position = "none", 
       axis.title.y = element_blank(), 
+      axis.title.x = element_markdown(face = "bold", hjust = 0.5),
       axis.text.y = element_blank()
     ) +
     labs(
       x = resp_name, 
-      y = "",
+      y = "Frequency",
       title = .title,
       subtitle = .subtitle
     )
@@ -266,7 +273,7 @@ ppc_stat_plots <- function(mod, simulations, term = "Condition", type = "fixed",
 #------------------------#
 
 make_signif_boxplot <- function(
-    mod, xaxis = "Condition", facet = NULL, cluster = "Mouse", agg_by = NULL, 
+    mod, xaxis = "Condition", facet = NULL, cluster = "Mouse", add_cluster_averages = TRUE, 
     scale = "link", adjust = "none", method = "pairwise", display_labels = FALSE, resp_name = NULL, print_eqs = FALSE
   ) {
   
@@ -275,12 +282,28 @@ make_signif_boxplot <- function(
     else return(dplyr::tally(df))
   }
   
+  dat <- insight::get_data(mod)
+  
+  if (!is.null(cluster) && cluster %ni% colnames(dat)) {
+    cluster <- NULL
+    add_cluster_averages <- FALSE
+  }
+  
+  if (!is.null(cluster) 
+      && cluster %in% colnames(dat) 
+      # && dplyr::all_equal(dat, dat |> group_by(across(any_of(c(xaxis, cluster)))) |> summarize(across(where(is.numeric), mean)) |> ungroup())
+  ) {
+    cluster <- NULL
+    add_cluster_averages <- FALSE
+  }
+  
   resp <- insight::find_response(mod)
   if(is.null(resp_name)) resp_name <- get_response_name(resp)
   
-  dat <- insight::get_data(mod)
-  if(!is.null(agg_by)) dat <- dat |> group_by(across(any_of(c(xaxis, agg_by)))) |> summarize({{ resp }} := mean(.data[[resp]])) |> ungroup()
   dat <- dat |> group_by(across(any_of(c(xaxis, facet)))) |> mutate(N = glue("N = {get_n_units(cur_data())}")) |> ungroup()
+  
+  ## Making sure the variables of interest are contrasts for emmeans
+  dat <- dat |> mutate(across(c(any_of(c(xaxis, facet)) & where(\(c) !is.factor(c))), as.factor))
   
   max <- max(dat[[resp]])
   min <- min(dat[[resp]])
@@ -308,7 +331,7 @@ make_signif_boxplot <- function(
     mutate(
       x1 = match(X1, levels(dat[[xaxis]])),
       x2 = match(X2, levels(dat[[xaxis]])),
-      p.signif = format_pvalue(p.value)
+      p.signif = label_pval(p.value)
     ) |>
     arrange(x.diff := abs(x2 - x1)) |>
     mutate(
@@ -320,10 +343,16 @@ make_signif_boxplot <- function(
   
   # -----------[ Plot ]----------- #
   
-  plot <- (ggplot(dat, aes(x = .data[[xaxis]], y = .data[[resp]], color = .data[[xaxis]]))
-    + geom_boxplot(outlier.alpha = 0, size = 1.1, fill = NA)
+  plot <- (ggplot(dat, aes_string(x = xaxis, y = resp, color = xaxis))
+    + geom_boxplot(outlier.alpha = 0, size = 1.1)
     + stat_summary(fun = mean, geom = "errorbar", aes(ymax = ..y.., ymin = ..y..), width = 0.75, size = 1.1, linetype = "dotted")
-    + geom_jitter(size = 2, width = 0.1, alpha = 0.6)
+    + { if (!is.null(cluster)) geom_jitter(size = 2, width = 0.1, alpha = 0.3)
+        else geom_jitter(aes_string(fill = xaxis), shape = 23, color = color_text_bi, size = 3, width = 0.1, alpha = 0.8)
+    }
+    + {if (add_cluster_averages) stat_summary(
+      aes_string(group = cluster, fill = xaxis), geom = "point", fun = mean, 
+      size = ifelse(is.null(facet), 4, 3), shape = 23, color = color_text_bi, alpha = 0.8, position = position_dodge(0.2)
+    )}
     + geom_errorbarh(
       data = p_data_contrasts, aes(xmin = x1, xmax = x2, y = pos.y), inherit.aes = FALSE, 
       color = color_text_bi, height = 0.03 * amp, size = 0.5
@@ -341,16 +370,17 @@ make_signif_boxplot <- function(
       axis.title.y = ggtext::element_markdown()
     )
     + labs(y = resp_name)
+    # + {if (!is.null(add_averages_by)) 
+    #     labs(caption = glue::glue("Small round points are individual measurements\n Diamonds represent {add_averages_by}-averages"))
+    #   }
     + scale_x_discrete(labels = \(l) str_replace(l, "^H", "IH"))
+    + {if (!is.null(facet)) facet_wrap( ~ .data[[facet]])}
+    + {if (display_labels) plot <- plot + labs(
+        title = glue::glue("BoxPlot of [{resp}] by [{xaxis}]"), 
+        subtitle = glue::glue("With p-values {correction}")
+      )}
   )
-  
-  if(!is.null(facet)) plot <- plot + facet_wrap( ~ .data[[facet]])
 
-  if(display_labels) plot <- plot + labs(
-    title = glue::glue("BoxPlot of [{resp}] by [{xaxis}]"), 
-    subtitle = glue::glue("With p-values {correction}")
-  )
-  
   # -----------[ Formatted results ]----------- #
   
   if (print_eqs) {
@@ -373,7 +403,7 @@ make_signif_boxplot <- function(
 
 
 make_signif_boxplot_inter <- function(
-    mod, xaxis = "Condition", facet, cluster = "Mouse", agg_by = NULL, 
+    mod, xaxis = "Condition", facet, cluster = "Mouse", add_cluster_averages = TRUE, 
     scale = "link", adjust = "none", display_labels = FALSE, resp_name = NULL, print_eqs = FALSE
 ) {
   
@@ -382,12 +412,28 @@ make_signif_boxplot_inter <- function(
     else return(dplyr::tally(df))
   }
   
+  dat <- insight::get_data(mod)
+  
+  if (!is.null(cluster) && cluster %ni% colnames(dat)) {
+    cluster <- NULL
+    add_cluster_averages <- FALSE
+  }
+  
+  if (!is.null(cluster) 
+      && cluster %in% colnames(dat) 
+      # && dplyr::all_equal(dat, dat |> group_by(across(any_of(c(xaxis, cluster)))) |> summarize(across(where(is.numeric), mean)) |> ungroup())
+  ) {
+    cluster <- NULL
+    add_cluster_averages <- FALSE
+  }
+  
   resp <- insight::find_response(mod)
   if(is.null(resp_name)) resp_name <- get_response_name(resp)
   
-  dat <- insight::get_data(mod)
-  if(!is.null(agg_by)) dat <- dat |> group_by(across(any_of(c(xaxis, agg_by)))) |> summarize({{ resp }} := mean(.data[[resp]])) |> ungroup()
   dat <- dat |> group_by(across(any_of(c(xaxis, facet)))) |> mutate(N = glue("N = {get_n_units(cur_data())}")) |> ungroup()
+  
+  ## Making sure the variables of interest are contrasts for emmeans
+  dat <- dat |> mutate(across(c(any_of(c(xaxis, facet)) & where(\(c) !is.factor(c))), as.factor))
   
   max <- max(dat[[resp]])
   min <- min(dat[[resp]])
@@ -397,7 +443,6 @@ make_signif_boxplot_inter <- function(
   else correction <- glue::glue("({adjust} corrected)")
   
   # -----------[ Contrasts ]----------- #
-  # WARN: Make sure 'facet' and 'xaxis' are factors
   
   specs <- paste0(" ~ ", xaxis)
   if(!is.null(facet)) specs <- paste0(specs, " | ", facet)
@@ -416,7 +461,7 @@ make_signif_boxplot_inter <- function(
     mutate(
       x1 = (match(.data[[facet]], levels(dat[[facet]])) - 1) * length(unique(dat[[xaxis]])) + match(X1, levels(dat[[xaxis]])),
       x2 = (match(.data[[facet]], levels(dat[[facet]])) - 1) * length(unique(dat[[xaxis]])) + match(X2, levels(dat[[xaxis]])),
-      p.signif = format_pvalue(p.value)
+      p.signif = label_pval(p.value)
     ) |>
     arrange(x.diff := abs(x2 - x1)) |>
     mutate(
@@ -437,7 +482,7 @@ make_signif_boxplot_inter <- function(
                     (match(F1, levels(dat[[facet]])) - 1) * length(unique(dat[[xaxis]])) + match(X2, levels(dat[[xaxis]]))),
       x2 = 0.5 * ((match(F2, levels(dat[[facet]])) - 1) * length(unique(dat[[xaxis]])) + match(X1, levels(dat[[xaxis]])) +
                     (match(F2, levels(dat[[facet]])) - 1) * length(unique(dat[[xaxis]])) + match(X2, levels(dat[[xaxis]]))),
-      p.signif = format_pvalue(p.value)
+      p.signif = glue("{scales::pvalue(p.value)} {gtools::stars.pval(p.value)}")
     ) |>
     arrange(x.diff := abs(x2 - x1)) |>
     mutate(
@@ -449,9 +494,15 @@ make_signif_boxplot_inter <- function(
   # -----------[ Plot ]----------- #
   
   plot <- (ggplot(dat, aes(x = interaction(.data[[xaxis]], .data[[facet]], sep = "_"), y = .data[[resp]], color = .data[[xaxis]]))
-    + geom_boxplot(outlier.alpha = 0, size = 1.1, fill = NA)
+    + geom_boxplot(outlier.alpha = 0, size = 1.1)
     + stat_summary(fun = mean, geom = "errorbar", aes(ymax = ..y.., ymin = ..y..), width = 0.75, size = 1.1, linetype = "dotted")
-    + geom_jitter(size = 2, width = 0.1, alpha = 0.6)
+    + { if (!is.null(cluster)) geom_jitter(size = 2, width = 0.1, alpha = 0.3)
+      else geom_jitter(aes_string(fill = xaxis), shape = 23, color = color_text_bi, size = 3, width = 0.1, alpha = 0.8)
+    }
+    + {if (add_cluster_averages) stat_summary(
+      aes_string(group = cluster, fill = xaxis), geom = "point", fun = mean, 
+      size = 3, shape = 23, color = color_text_bi, alpha = 0.8, position = position_dodge(0.2)
+    )}
     + geom_errorbarh(
       data = p_data_contrasts, aes(xmin = paste(X1, .data[[facet]], sep = "_"), xmax = paste(X2, .data[[facet]], sep = "_"), y = pos.y), inherit.aes = FALSE,
       color = color_text_bi, height = 0.02 * amp, size = 0.5
@@ -472,17 +523,15 @@ make_signif_boxplot_inter <- function(
     )
     + theme(
       legend.position = "none",
-      axis.title.x = element_blank(),
-      axis.text.x = ggtext::element_markdown(),
+      # axis.title.x = element_blank(),
       axis.title.y = ggtext::element_markdown()
     )
-    + labs(y = resp_name, x = glue::glue("{xaxis} *per* {facet}"))
+    + labs(y = resp_name, x = str_c(xaxis, " by ", facet))
     + scale_x_discrete(labels = \(l) str_replace(l, "_", "\n") |> str_replace("^H", "IH"))
-  )
-  
-  if (display_labels) plot <- plot + labs(
-    title = glue::glue("BoxPlot of [{resp}] by [{xaxis}]"),
-    subtitle = glue::glue("With p-values {correction}")
+    + {if (display_labels) plot <- plot + labs(
+        title = glue::glue("BoxPlot of [{resp}] by [{xaxis}]"),
+        subtitle = glue::glue("With p-values {correction}")
+      )}
   )
   
   # -----------[ Formatted results ]----------- #
@@ -527,6 +576,9 @@ modeled_temporal_plot <- function(
   resp <- insight::find_response(mod)
   data <- insight::get_data(mod)
   
+  ## Making sure the variables of interest are contrasts for emmeans
+  data <- data |> mutate(across(c(any_of(c(treatment, time)) & where(\(c) !is.factor(c))), as.factor))
+  
   emmeans_formula <- paste0("~ ", paste(c(time, treatment), collapse = " | ")) |> as.formula()
   
   emmeans <- emmeans::emmeans(mod, specs = emmeans_formula, type = "response") |> as.data.frame() |> 
@@ -550,36 +602,36 @@ modeled_temporal_plot <- function(
   UCL_name <- purrr::keep(colnames(emmeans), grepl(pattern = "UCL|upper", x = colnames(emmeans)))
   
   p_data <- (left_join(
-      emmeans |> select({{ time }}, {{ treatment }}, any_of(c("Observed")), Modeled, matches("CL$")),
-      contrasts |> select({{ time }}, contrast, p.value),
-      by = time
-    ) 
-    |> group_by(.data[[time]]) 
-    |> summarize(
-      pos.y = 1.1 * max(.data[[UCL_name]]),
-      p.value = mean(p.value)
-    ) 
-    |> ungroup() 
-    |> mutate(p.signif = ifelse(p.value > alpha, NA_character_, glue::glue("{scales::pvalue(p.value)}  \n {gtools::stars.pval(p.value)}")))
+    emmeans |> select({{ time }}, {{ treatment }}, any_of(c("Observed")), Modeled, matches("CL$")),
+    contrasts |> select({{ time }}, contrast, p.value),
+    by = time
+  ) 
+  |> group_by(.data[[time]]) 
+  |> summarize(
+    pos.y = 1.1 * max(.data[[UCL_name]]),
+    p.value = mean(p.value)
+  ) 
+  |> ungroup() 
+  |> mutate(p.signif = ifelse(p.value > alpha, NA_character_, glue("{scales::pvalue(p.value)}  \n {gtools::stars.pval(p.value)}")))
   )
   
   plot <- (ggplot(emmeans, aes_string(x = time, y = "Modeled", color = treatment))
-           + geom_jitter(data = data, aes_string(y = resp), alpha = 0.6, size = 2, width = 0.1, height = 0) # Data points
-           + geom_point(size = 3, position = position_dodge(0.15)) # Modeled emmeans
-           + geom_errorbar(aes_string(ymin = LCL_name, ymax = UCL_name), width = 0.25, size = 1.1, position = position_dodge(0.15))
-           + geom_line(aes_string(group = treatment), position = position_dodge(0.15))
-           + geom_text(
-             data = p_data,
-             aes_string(label = "p.signif", x = time, y = "pos.y"),
-             vjust = 0.5, hjust = 0.5,
-             size = 5, color = color_text_bi
-           )
-           + labs(y = resp_name %||% get_response_name(resp))
-           + theme(
-             legend.position = "right",
-             legend.key.size = unit(1.5, 'cm'), 
-             legend.title = element_text(size = 14),
-           )
+    + geom_jitter(data = data, aes_string(y = resp), alpha = 0.4, size = 2, width = 0.1, height = 0) # Data points
+    + geom_point(size = 3, position = position_dodge(0.15)) # Modeled emmeans
+    + geom_errorbar(aes_string(ymin = LCL_name, ymax = UCL_name), width = 0.25, size = 1.1, position = position_dodge(0.15))
+    + geom_line(aes_string(group = treatment), position = position_dodge(0.15))
+    + geom_text(
+     data = p_data,
+     aes_string(label = "p.signif", x = time, y = "pos.y"),
+     vjust = 0.5, hjust = 0.5,
+     size = 5, color = "black"
+    )
+    + labs(y = resp_name %||% get_response_name(resp))
+    + theme(
+     legend.position = "right",
+     legend.key.size = unit(1.5, 'cm'), 
+     legend.title = element_text(size = 14),
+    )
   )
   
   if (!is.null(xlims)) plot <- plot + scale_x_discrete(limits = xlims)
