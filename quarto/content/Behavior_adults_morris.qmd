@@ -1,4 +1,4 @@
-# Behavior [Adults] (Morris)
+# Adults (Morris)
 
 ```{r}
 #| echo: false
@@ -15,7 +15,7 @@ source(here::here("src", "init.R"), echo = FALSE)
 responses <- c("Path_Efficiency", "Latency_Plat", "Freezing")
 predictors <- c("Condition", "Stage")
 
-data <- load_behavior_adults(config$data$behavior_adults_path, sheet = "Behavior") |> 
+data <- load_behavior_adults(sheet = "Behavior") |> 
   mutate(
     across(c("Session", "Stage"), \(col) as.factor(col)),
     across(all_of(responses), \(col) as.numeric(col)),

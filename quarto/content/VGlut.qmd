@@ -17,7 +17,7 @@ source(here::here("src", "init.R"), echo = FALSE)
 responses <- c("A_VGLUT_MF", "A_VGLUT_CF", "A_DD_per_cell", "Vol_DD_per_cell", "A_ML", "Thick_ML", "N_CC")
 predictors <- c("Condition", "Z")
 
-data <- load_vglut(config$data$vglut_path) |> select(Sample, Mouse, any_of(predictors), any_of(responses))
+data <- load_vglut() |> select(Sample, Mouse, any_of(predictors), any_of(responses))
 
 data_agg <- (data
   |> group_by(Mouse, Condition) 

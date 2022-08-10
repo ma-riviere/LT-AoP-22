@@ -1,4 +1,4 @@
-# Caspase [P12] (Total)
+# Caspase (Total)
 
 ```{r}
 #| echo: false

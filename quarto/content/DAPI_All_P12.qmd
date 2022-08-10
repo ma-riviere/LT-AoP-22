@@ -14,7 +14,7 @@ source(here::here("src", "init.R"), echo = FALSE)
 ```{r}
 #| echo: false
 
-data <- load_dapi_density_P12(config$data$dapi_density_P12_path)
+data <- load_dapi_density_P12()
 
 responses <- c("Nb_Vol", "Avg_Distance")
 predictors <- c("Condition", "Mouse", "Layer")

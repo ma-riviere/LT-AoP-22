@@ -2,7 +2,7 @@ project:
   type: book
   pre-render: src/setup.R
   output-dir: "docs"
-  resources: [.nojekyll, quarto/css/*.scss]
+  resources: [.nojekyll, quarto/css/*.scss, quarto.bib, vancouver.csl]
 
 book:
   title: "Intermittent hypoxia and cerebellar development"
@@ -14,8 +14,8 @@ book:
     - name: "Agalic Rodriguez-Duboc"
       orcid: 0000-0002-2084-3780
   favicon: quarto/favicon.png
-  twitter-card:
-    creator: "@mariviere1"
+  # twitter-card:
+  #   creator: "@mariviere1"
   repo-url: "https://github.com/ma-riviere/LT-AoP-22/"
   repo-branch: main
   page-navigation: true
@@ -23,16 +23,18 @@ book:
     location: sidebar
     type: textbox
   abstract: |
-    Apnea of prematurity (AOP) is caused by respiratory control immaturity and affects nearly 50 % of premature newborns. This pathology induces perinatal intermittent hypoxia (IH), 
-    which leads to neurodevelopmental disorders. The impact on the brain has been well investigated. 
-    However, despite its functional importance and immaturity at birth, the involvement of the cerebellum remains poorly understood. 
-    Therefore, this study aims to identify the effects of IH on cerebellar development using a mouse model of AOP. 
-    At postnatal day 12 (P12), IH-mouse cerebella present higher oxidative stress associated with delayed maturation of the cerebellar cortex and 
-    decreased dendritic arborization of Purkinje cells. Moreover, mice present with growth retardation and motor disorders. 
-    In response to hypoxia, the developing cerebellum triggers compensatory mechanisms resulting in the unaltered organization of the cortical layers from P21 onwards. 
+    **Background:** Apnea of prematurity (AOP) is caused by respiratory control immaturity and affects nearly 50% of premature newborns. 
+    This pathology induces perinatal intermittent hypoxia (IH), which leads to neurodevelopmental disorders. 
+    The impact on the brain has been well investigated. However, despite its functional importance and immaturity at birth, the involvement of the cerebellum remains poorly understood. 
+    Therefore, this study aims to identify the effects of IH on cerebellar development using a mouse model of AOP consisting of repeated 2-min cycles of hypoxia and reoxygenation over 6 h and for 10 days starting on postnatal day 2 (P2).
+    
+    **Results:** At P12, IH-mouse cerebella present higher oxidative stress associated with delayed maturation of the cerebellar cortex and decreased dendritic arborization of Purkinje cells. 
+    Moreover, mice present with growth retardation and motor disorders. In response to hypoxia, the developing cerebellum triggers compensatory mechanisms resulting in the unaltered organization of the cortical layers from P21 onwards. 
     Nevertheless, some abnormalities remain in adult Purkinje cells, such as the dendritic densification, the increase in afferent innervation, and axon hypomyelination. 
-    Moreover, this compensation seems insufficient to allow locomotor recovery because adult mice still show motor impairment and significant disorders in spatial learning. 
-    All these findings indicate that the cerebellum is a target of intermittent hypoxia and could contribute to explaining the pathophysiology of AOP.
+    Moreover, this compensation seems insufficient to allow locomotor recovery because adult mice still show motor impairment and significant disorders in spatial learning.
+    
+    **Conclusions:** All these findings indicate that the cerebellum is a target of intermittent hypoxia through alterations of developmental mechanisms leading to long-term functional deficits. 
+    Thus, the cerebellum could contribute, like others brain structures, to explaining the pathophysiology of AOP.
 
   chapters:
     - index.qmd
@@ -46,6 +48,9 @@ book:
         - quarto/content/Casp_Act.qmd
     - quarto/content/BrDU.qmd
     - quarto/content/Thickness.qmd
+    - part: "PCR"
+      chapters:
+        - quarto/content/PCR_OS.qmd
     - part: "Calbindin"
       chapters:
         - quarto/content/Calb_P12.qmd
@@ -103,10 +108,11 @@ format:
     # fig-align: center
     fig-dpi: 250
     fig-format: svg
-    # fig-cap-location: bottom
     code-block-bg: true
     code-block-border-left: "#31BAE9"
-    highlight-style: arrow
+    highlight-style:
+      light: quarto/highlight-styles/style-light.theme
+      dark: quarto/highlight-styles/style-dark.theme
     link-external-newwindow: true
 
 engine: knitr

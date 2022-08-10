@@ -1,4 +1,4 @@
-# DAPI [Mol. Layer - Adult]
+# DAPI [Mol. layer - Adult]
 
 *Di-Amidino-2-Phenyl-Indole*
 
@@ -14,7 +14,7 @@ source(here::here("src", "init.R"), echo = FALSE)
 ```{r}
 #| echo: false
 
-data <- load_dapi_ml_ad(config$data$dapi_ml_ad_path)
+data <- load_dapi_ml_ad()
 
 responses <- c("A_ML", "A_DAPI", "Vol_DAPI")
 predictors <- c("Condition", "Z")

@@ -1,4 +1,4 @@
-# Behavior [Pups]
+# Pups
 
 ```{r}
 #| echo: false
@@ -15,7 +15,7 @@ source(here::here("src", "init.R"), echo = FALSE)
 responses <- c("Time_RR", "Time_GR")
 predictors <- c("Condition", "Stage")
 
-data <- load_behavior_pups(config$data$behavior_pups_path) |> mutate(Time_GR = ifelse(Time_GR == 0, 0.1, Time_GR))
+data <- load_behavior_pups() |> mutate(Time_GR = ifelse(Time_GR == 0, 0.1, Time_GR))
 
 Time_RR_name <- "Latency to right *(s)*"
 Time_GR_name <- "Latency to fall *(s)*"

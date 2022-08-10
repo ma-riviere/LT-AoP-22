@@ -9,7 +9,7 @@ layer_list <- c("EGL", "ML", "IGL")
 #### MBP ####
 #-----------#
 
-load_mbp <- function(path = config$data$mbp_path) {
+load_mbp <- function(path = config$data$IHC$mbp_path) {
   return(
     readxl::read_excel(path)
     |> tidyr::separate(Sample, sep = " ", into = c("Mouse", "c", "Slice", "Loc"), remove = T, convert = T)
@@ -33,7 +33,7 @@ load_mbp <- function(path = config$data$mbp_path) {
 #### DAPI_ML ####
 #---------------#
 
-load_dapi_ml_ad <- function(path = config$data$dapi_ml_ad_path) {
+load_dapi_ml_ad <- function(path = config$data$IHC$dapi_ml_ad_path) {
   return(
     read_excel(path)
     |> tidyr::extract(
@@ -58,7 +58,7 @@ load_dapi_ml_ad <- function(path = config$data$dapi_ml_ad_path) {
 #### DAPI_Density ####
 #--------------------#
 
-load_dapi_density_P12 <- function(path = config$data$dapi_density_P12_path) {
+load_dapi_density_P12 <- function(path = config$data$IHC$dapi_density_P12_path) {
   return(
     readxl::read_excel(path)
     |> filter(!Outlier)
@@ -82,7 +82,7 @@ load_dapi_density_P12 <- function(path = config$data$dapi_density_P12_path) {
 #### VGLUT ####
 #-------------#
 
-load_vglut <- function(path = config$data$vglut_path) {
+load_vglut <- function(path = config$data$IHC$vglut_path) {
   return(
     readxl::read_excel(path)
     |> filter(!Outlier)
@@ -111,7 +111,7 @@ load_vglut <- function(path = config$data$vglut_path) {
 #### GLUD2 ####
 #-------------#
 
-load_GluD2 <- function(path = config$data$GluD2_path) {
+load_GluD2 <- function(path = config$data$IHC$GluD2_path) {
   return(
     readxl::read_excel(path)
     |> mutate(Sample = paste("DA", Sample, sep = ""))
@@ -139,7 +139,7 @@ load_GluD2 <- function(path = config$data$GluD2_path) {
 #----------------#
 
 ## Combined Glur2 & Vglut data
-load_purkinje <- function(vglut_path = config$data$vglut_path, GluD2_path = config$data$GluD2_path) {
+load_purkinje <- function(vglut_path = config$data$IHC$vglut_path, GluD2_path = config$data$IHC$GluD2_path) {
   return(
     full_join(
       load_vglut(vglut_path) |> 
@@ -172,7 +172,7 @@ load_purkinje <- function(vglut_path = config$data$vglut_path, GluD2_path = conf
 #### BrDU ####
 #------------#
 
-load_BrDU <- function(path = config$data$brDU_path) {
+load_BrDU <- function(path = config$data$IHC$brDU_path) {
   return(
     readxl::excel_sheets(path)
     |> purrr::set_names()
@@ -190,7 +190,7 @@ load_BrDU <- function(path = config$data$brDU_path) {
       Layer = factor(Layer)
     )
     |> arrange(Layer, Condition, Sample)
-    |> select(Layer, Sample, Stage, Mouse, Condition, Well, Dens_BrDU)
+    |> select(Mouse, Layer, Stage, Condition, Dens_BrDU)
   )
 }
 
@@ -199,7 +199,7 @@ load_BrDU <- function(path = config$data$brDU_path) {
 #### Calb-P12 ####
 #---------------#
 
-load_Calb_P12 <- function(path = config$data$calb_P12_path) {
+load_Calb_P12 <- function(path = config$data$IHC$calb_P12_path) {
   return(
     readxl::read_excel(path)
     |> mutate(
@@ -218,7 +218,7 @@ load_Calb_P12 <- function(path = config$data$calb_P12_path) {
 #### Calb-P21 ####
 #---------------#
 
-load_Calb_P21 <- function(path = config$data$calb_P21_path) {
+load_Calb_P21 <- function(path = config$data$IHC$calb_P21_path) {
   return(
     readxl::read_excel(path, sheet = "Filtered")
     |> tidyr::extract(
@@ -248,22 +248,22 @@ load_Calb_P21 <- function(path = config$data$calb_P21_path) {
 
 load_Casp <- function(stage = NULL) {
   if (is.null(stage) || stringr::str_to_sentence(stage) == "All") {
-    paths <- str_subset(names(config$data), pattern = "^casp_P(\\d{1,2}|Ad)")
+    paths <- str_subset(names(config$data$IHC), pattern = "^casp_P(\\d{1,2}|Ad)")
     purrr::map_df(paths, \(path) load_Casp(str_extract(path, pattern = "(P\\d{1,2})")))
   }
   else {
-    path <- str_subset(names(config$data), pattern = paste0("^casp_", stage))
+    path <- str_subset(names(config$data$IHC), pattern = paste0("^casp_", stage))
     
     if (length(path) == 0) {
-      log.error("[DATA] No file path matches" %s+% stage)
+      log.error("[DATA] No file path matches " %s+% stage)
       return(NULL)
     }
     else if (length(path) > 1) {
-      log.warn("[DATA] More than one file path matches" %s+% stage)
+      log.warn("[DATA] More than one file path matches " %s+% stage)
     }
     else {
       return(
-        readxl::read_excel(config$data[[path[[1]]]])
+        readxl::read_excel(config$data$IHC[[path[[1]]]])
         |> tidyr::extract(
           Sample,
           into = c("Bloodline", "MouseID", "Condition"),
@@ -298,7 +298,7 @@ load_Casp <- function(stage = NULL) {
 #### Casp-Act ####
 #----------------#
 
-load_Casp_Act <- function(path = config$data$casp_Act_path) {
+load_Casp_Act <- function(path = config$data$IHC$casp_Act_path) {
   return(
     readxl::read_xlsx(path) 
     |> tidyr::fill(c(Mouse, Experiment), .direction = "down") 
@@ -320,7 +320,7 @@ load_Casp_Act <- function(path = config$data$casp_Act_path) {
 #### Weights ####
 #---------------#
 
-load_Weight <- function(path = config$data$weight_path, age = "All") {
+load_Weight <- function(path = config$data$IHC$weight_path, age = "All") {
   if (is.null(age) || str_to_sentence(age) == "All") {
     return(
       purrr::map_df(
@@ -351,14 +351,14 @@ load_Weight <- function(path = config$data$weight_path, age = "All") {
   }
 }
 
-load_Weight_Nest <- function(path = config$data$weight_path) {
+load_Weight_Nest <- function(path = config$data$IHC$weight_path) {
   return(
     readxl::read_xlsx(path, sheet = "Nest")
     |> mutate(Condition = factor(Condition, levels = c("N", "H"), labels = c("N", "IH")))
   )
 }
 
-load_Weight_Gain <- function(path = config$data$weight_path) {
+load_Weight_Gain <- function(path = config$data$IHC$weight_path) {
   return(
     readxl::read_xlsx(path, sheet = "Weight_Gain_PT")
     |> tidyr::unite(
@@ -381,7 +381,7 @@ load_Weight_Gain <- function(path = config$data$weight_path) {
 #### Behavior ####
 #----------------#
 
-load_behavior_pups <- function(path = config$data$behavior_pups_path) {
+load_behavior_pups <- function(path = config$data$IHC$behavior_pups_path) {
   return(
     readxl::read_excel(path)
     |> tidyr::unite("Mouse", c(Experiment, Mouse, Condition), sep = "", remove = F)
@@ -398,7 +398,7 @@ load_behavior_pups <- function(path = config$data$behavior_pups_path) {
   )
 }
 
-load_behavior_teens <- function(path = config$data$behavior_teens_path) {
+load_behavior_teens <- function(path = config$data$IHC$behavior_teens_path) {
   return(
     readxl::read_excel(path)
     |> tidyr::unite("Mouse", c(Experiment, Mouse, Condition), sep = "", remove = F)
@@ -411,7 +411,7 @@ load_behavior_teens <- function(path = config$data$behavior_teens_path) {
   )
 }
 
-load_behavior_adults <- function(path = config$data$behavior_adults_path, sheet) {
+load_behavior_adults <- function(path = config$data$IHC$behavior_adults_path, sheet) {
   return(
     readxl::read_excel(path, sheet = sheet)
     |> tidyr::unite("Mouse", c(Experiment, Mouse, Condition), sep = "", remove = F)
@@ -428,7 +428,7 @@ load_behavior_adults <- function(path = config$data$behavior_adults_path, sheet)
 #### Thickness ####
 #-----------------#
 
-load_Thickness <- function(path = config$data$thickness_path, stage = "All") {
+load_Thickness <- function(path = config$data$IHC$thickness_path, stage = "All") {
   if (is.null(stage) || str_to_sentence(stage) == "All") {
     return(
       purrr::map_df(
@@ -459,7 +459,7 @@ load_Thickness <- function(path = config$data$thickness_path, stage = "All") {
 #### ROS ####
 #-----------#
 
-load_ROS <- function(path = config$data$ROS_path) {
+load_ROS <- function(path = config$data$IHC$ROS_path) {
   return(
     readxl::read_excel(path)
     |> mutate(
@@ -468,5 +468,78 @@ load_ROS <- function(path = config$data$ROS_path) {
     )
     |> arrange(Condition, Mouse)
     |> select(Mouse, Condition, everything())
+  )
+}
+
+
+#-----------------#
+#### qPCR Data ####
+#-----------------#
+
+load_PCR_OS <- function(path = config$data$PCR$OS_P12_path, max_Ct_allowed = 33) {
+  return(
+    read_excel(path)
+    |> mutate(
+      Condition = factor(Condition, levels = c("N", "IH")),
+      Stage = factor(Stage),
+      Experiment = factor(Experiment)
+    )
+    |> filter(Mean.Ct <= max_Ct_allowed)
+    |> add_fold_change()
+    |> add_pathways()
+    |> select(Experiment, Mouse, Stage, Pathway, Gene, Condition, DCt, Fold)
+  )
+}
+
+# ---- Helper functions
+
+## Computing fold change values
+add_fold_change <- function(data) {
+  return(data 
+    |> group_by(Experiment, Stage, Gene, Condition)
+    |> mutate(avg.dct = mean(DCt), avg.N = mean(DCt))
+    |> ungroup()
+    |> mutate(avg.N = ifelse(Condition == "N", avg.N, NA))
+    |> group_by(Experiment, Stage, Gene)
+    |> arrange(Experiment, Stage, Gene, Condition)
+    |> fill(avg.N, .direction = "down")
+    |> ungroup()
+    |> mutate(ddct = avg.dct - avg.N, two = 2**(-ddct))
+    |> group_by(Stage, Gene, Condition)
+    |> mutate(Fold = mean(two))
+    |> ungroup()
+  )
+}
+
+## Adding pathway information
+add_pathways <- function(data, path = config$data$PCR$pathways_info) {
+  return(read_excel(path = path) |> right_join(data, by = "Gene"))
+}
+
+## Computing expression type based on fold change sign and its statistical significance
+add_expression <- function(data) {
+  return(data 
+   |> group_by(Stage, Gene)
+   |> mutate(Expression = ifelse(Condition == "IH", get_regulation_type(Fold, p.val), NA))
+   |> fill(Expression, .direction = "updown")
+   |> ungroup()
+  )
+}
+
+regulation_type <- list(
+  NOT_REG = "Not Regulated", 
+  UPREG = "Upregulated",
+  DOWNREG = "Downregulated"
+)
+
+get_regulation_type <- function(fold_change, p_value) {
+  case_when(
+    p_value <= alpha ~ ifelse(
+      fold_change < threshold.reg,
+      regulation_type$DOWNREG,
+      regulation_type$UPREG
+    ),
+    is.na(p_value) | is.na(fold_change) ~ NA_character_,
+    TRUE ~ regulation_type$NOT_REG
   )
 }

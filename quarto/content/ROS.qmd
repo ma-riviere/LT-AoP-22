@@ -12,7 +12,7 @@ source(here::here("src", "init.R"), echo = FALSE)
 ```{r}
 #| echo: false
 
-data <- load_ROS(config$data$ROS_path)
+data <- load_ROS()
 
 data_agg <- mutate(data, dCondition = as.numeric(Condition == "IH"), ID = row_number())
 

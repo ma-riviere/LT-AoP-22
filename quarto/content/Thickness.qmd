@@ -15,7 +15,7 @@ source(here::here("src", "init.R"), echo = FALSE)
 responses <- c("Thick_EGL", "Thick_MLPL", "Thick_IGL", "Thick_Total")
 predictors <- c("Condition", "Stage")
 
-data <- (load_Thickness(config$data$thickness_path)
+data <- (load_Thickness()
   |> mutate(Thick_IGL = coalesce(Thick_IGL, Thick_GL), Stage = factor(Stage))
   |> select(Mouse, Slice, any_of(predictors), any_of(responses))
 )

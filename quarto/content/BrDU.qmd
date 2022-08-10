@@ -12,7 +12,7 @@ source(here::here("src", "init.R"), echo = FALSE)
 ```{r}
 #| echo: false
 
-data <- load_BrDU(config$data$brDU_path)
+data <- load_BrDU()
 
 responses <- c("Dens_BrDU")
 predictors <- c("Condition", "Layer")

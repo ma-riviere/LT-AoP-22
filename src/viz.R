@@ -183,6 +183,44 @@ compositional_plot <- function(dat, responses, prefix) {
 }
 
 
+timeline_fold <- function(data, facet = NULL, trans = "identity", title = " ") {
+  
+  stage_limits <- NULL
+  if (!is.null(data$Stage) && length(unique(data$Stage)) > 1) stage_limits <- seq(1, length(unique(data$Stage)) - 1) + .5
+  
+  data <- data |> 
+    filter(Condition == "IH" & p.val < alpha) |> 
+    group_by(across(any_of(facet))) |> 
+    mutate(Fold_Amp = ifelse(max(Fold, na.rm = T) - min(Fold, na.rm = T) != 0, max(Fold, na.rm = T) - min(Fold, na.rm = T), mean(Fold, na.rm = T)) * 0.1) |> 
+    ungroup() |> 
+    mutate(stars = gtools::stars.pval(p.val)) |> 
+    distinct(Stage, Gene, .keep_all = TRUE)
+  
+  timeline <- ggplot(data, aes(x = Stage, group = Gene, color = Fold >= 1)) +
+    geom_linerange(aes(ymax = Fold), ymin = do.call(trans, list(1)), size = 5, position = position_dodge(1)) +
+    geom_hline(yintercept = 1, color = color_text_bi) +
+    { if(!is.null(stage_limits)) geom_vline(xintercept = stage_limits, linetype = "dashed", color = "grey50") } +
+    geom_text(
+      aes(label = Gene, y = ifelse(Fold > 1, 1 - Fold_Amp, 1 + Fold_Amp), hjust = ifelse(Fold > 1, 1, 0)),
+      vjust = 0.3, angle = 90, size = 6, position = position_dodge(1), check_overlap = T
+    ) +
+    geom_text(
+      aes(label = str_c(round(Fold, 2), stars, sep = " "), y = ifelse(Fold > 1, Fold + Fold_Amp, Fold - Fold_Amp), hjust = ifelse(Fold > 1, 0, 1)),
+      vjust = 0.5, angle = 90, size = 6, position = position_dodge(1), check_overlap = T
+    ) +
+    labs(title = title, y = ifelse(trans != "identity", glue("Fold Change ({trans} scale)"), "Fold Change"), x = "") +
+    theme(legend.position = "none", axis.text.y = element_blank(), axis.title.x = element_blank()) +
+    scale_color_manual(" ", values = c("firebrick3", "seagreen4")) + 
+    scale_y_continuous(
+      trans = trans, expand = expansion(mult = 1.1),
+      labels = \(x) round(x, 2), # breaks = breaks_fun
+    )
+  { if(!is.null(facet)) facet_wrap(vars(.data[[facet]]), ncol = 1, scales = "free") }
+  
+  return(timeline)
+}
+
+
 #-------------------------#
 #### Model Diagnostics ####
 #-------------------------#
@@ -291,7 +329,7 @@ make_signif_boxplot <- function(
   
   if (!is.null(cluster) 
       && cluster %in% colnames(dat) 
-      # && dplyr::all_equal(dat, dat |> group_by(across(any_of(c(xaxis, cluster)))) |> summarize(across(where(is.numeric), mean)) |> ungroup())
+      && dat |> group_by(across(any_of(c(xaxis, facet, cluster)))) |> count() |> filter(n > 1) |> nrow() == 0
   ) {
     cluster <- NULL
     add_cluster_averages <- FALSE
@@ -318,9 +356,9 @@ make_signif_boxplot <- function(
   if(!is.null(facet)) specs <- paste0(specs, " | ", facet)
   specs <- as.formula(specs)
   
-  emmeans <- emmeans::emmeans(mod, specs = specs, type = "response")
+  emmeans <- emmeans::emmeans(mod, specs = specs, type = "response", data = insight::get_data(mod))
   if (tolower(scale) %in% c("response", "resp")) emmeans <- regrid(emmeans, transform = "response")
-  
+
   contrasts <- emmeans::contrast(emmeans, method = method, adjust = adjust, infer = TRUE) |> 
     as.data.frame() |> 
     rename(Contrast = contrast) |> 
@@ -343,8 +381,8 @@ make_signif_boxplot <- function(
   
   # -----------[ Plot ]----------- #
   
-  plot <- (ggplot(dat, aes_string(x = xaxis, y = resp, color = xaxis))
-    + geom_boxplot(outlier.alpha = 0, size = 1.1)
+  plot <- (ggplot(dat, aes_string(x = xaxis, y = resp, color = xaxis, fill = xaxis))
+    + geom_boxplot(outlier.alpha = 0, size = 1.1, fill = NA)
     + stat_summary(fun = mean, geom = "errorbar", aes(ymax = ..y.., ymin = ..y..), width = 0.75, size = 1.1, linetype = "dotted")
     + { if (!is.null(cluster)) geom_jitter(size = 2, width = 0.1, alpha = 0.3)
         else geom_jitter(aes_string(fill = xaxis), shape = 23, color = color_text_bi, size = 3, width = 0.1, alpha = 0.8)
@@ -361,7 +399,10 @@ make_signif_boxplot <- function(
       data = p_data_contrasts, aes(x = pos.x, y = pos.y, label = p.signif), inherit.aes = FALSE,
       size = 5, color = color_text_bi, fontface = "bold", vjust = 0, hjust = 0.5, position = position_nudge(y = 0.02 * amp)
     )
-    + geom_label(aes(y = min - 0.05 * amp, fontface = "bold", label = N, color = .data[[xaxis]]), fill = NA, size = 5, alpha = 0.7)
+    + geom_label(
+      aes(y = min - 0.05 * amp, fontface = "bold", label = N, color = .data[[xaxis]]),
+      fill = NA, size = 5, alpha = 0.7
+    )
     + theme(
       legend.position = "none", 
       panel.grid.major = element_blank(), 
@@ -370,9 +411,9 @@ make_signif_boxplot <- function(
       axis.title.y = ggtext::element_markdown()
     )
     + labs(y = resp_name)
-    # + {if (!is.null(add_averages_by)) 
-    #     labs(caption = glue::glue("Small round points are individual measurements\n Diamonds represent {add_averages_by}-averages"))
-    #   }
+    + {if (add_cluster_averages)
+        labs(caption = glue::glue("Small round points are individual measurements\n Diamonds represent {cluster}-averages"))
+      }
     + scale_x_discrete(labels = \(l) str_replace(l, "^H", "IH"))
     + {if (!is.null(facet)) facet_wrap( ~ .data[[facet]])}
     + {if (display_labels) plot <- plot + labs(
@@ -421,7 +462,7 @@ make_signif_boxplot_inter <- function(
   
   if (!is.null(cluster) 
       && cluster %in% colnames(dat) 
-      # && dplyr::all_equal(dat, dat |> group_by(across(any_of(c(xaxis, cluster)))) |> summarize(across(where(is.numeric), mean)) |> ungroup())
+      && dat |> group_by(across(any_of(c(xaxis, facet, cluster)))) |> count() |> filter(n > 1) |> nrow() == 0
   ) {
     cluster <- NULL
     add_cluster_averages <- FALSE
@@ -448,7 +489,7 @@ make_signif_boxplot_inter <- function(
   if(!is.null(facet)) specs <- paste0(specs, " | ", facet)
   specs <- as.formula(specs)
   
-  emmeans <- emmeans::emmeans(mod, specs = specs, type = "response")
+  emmeans <- emmeans::emmeans(mod, specs = specs, type = "response", data = insight::get_data(mod))
   if (tolower(scale) %in% c("response", "resp")) emmeans <- regrid(emmeans, transform = "response")
   
   contrasts <- emmeans::contrast(emmeans, method = "pairwise", adjust = adjust, infer = TRUE) |> 
@@ -494,7 +535,7 @@ make_signif_boxplot_inter <- function(
   # -----------[ Plot ]----------- #
   
   plot <- (ggplot(dat, aes(x = interaction(.data[[xaxis]], .data[[facet]], sep = "_"), y = .data[[resp]], color = .data[[xaxis]]))
-    + geom_boxplot(outlier.alpha = 0, size = 1.1)
+    + geom_boxplot(outlier.alpha = 0, size = 1.1, fill = NA)
     + stat_summary(fun = mean, geom = "errorbar", aes(ymax = ..y.., ymin = ..y..), width = 0.75, size = 1.1, linetype = "dotted")
     + { if (!is.null(cluster)) geom_jitter(size = 2, width = 0.1, alpha = 0.3)
       else geom_jitter(aes_string(fill = xaxis), shape = 23, color = color_text_bi, size = 3, width = 0.1, alpha = 0.8)
@@ -527,6 +568,9 @@ make_signif_boxplot_inter <- function(
       axis.title.y = ggtext::element_markdown()
     )
     + labs(y = resp_name, x = str_c(xaxis, " by ", facet))
+    + {if (add_cluster_averages)
+      labs(caption = glue::glue("Small round points are individual measurements\n Diamonds represent {cluster}-averages"))
+    }
     + scale_x_discrete(labels = \(l) str_replace(l, "_", "\n") |> str_replace("^H", "IH"))
     + {if (display_labels) plot <- plot + labs(
         title = glue::glue("BoxPlot of [{resp}] by [{xaxis}]"),

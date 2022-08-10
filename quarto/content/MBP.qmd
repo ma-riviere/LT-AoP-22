@@ -15,7 +15,7 @@ source(here::here("src", "init.R"), echo = FALSE)
 responses <- c("Length_Fil", "Area_Fil", "Vol_Fil")
 predictors <- c("Condition")
 
-data <- load_mbp(config$data$mbp_path) |> select(Sample, Mouse, any_of(predictors), any_of(responses))
+data <- load_mbp() |> select(Sample, Mouse, any_of(predictors), any_of(responses))
 
 data_agg <- (data
   |> group_by(Mouse, Condition) 

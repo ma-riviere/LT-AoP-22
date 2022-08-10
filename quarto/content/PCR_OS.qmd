@@ -1,0 +1,160 @@
+# Oxidative Stress Panel
+
+```{r}
+#| echo: false
+#| output: false
+
+source(here::here("src", "init.R"), echo = FALSE)
+```
+
+❖ **Data**
+
+```{r}
+#| echo: false
+
+data_raw <- load_PCR_OS(max_Ct_allowed = 33)
+
+Experiment_name <- "ID of the experimental batch (different plates)"
+Pathway_name <- "Biological pathway the Gene is involved in"
+DCt_name <- "Delta Ct"
+Fold_name <- "Fold change"
+
+data_raw
+```
+
+❖ **Description**
+
+```{r}
+#| echo: false
+#| output: asis
+
+describe_variables(data_raw)
+```
+
+## Data Exploration
+
+Split by `Pathway`:
+
+:::{.panel-tabset}
+
+```{r}
+#| echo: false
+#| output: asis
+
+distribution_summary(data_raw, dvs = "DCt", between = c("Gene", "Condition")) |> 
+  select(-Variable) |> 
+  left_join(data_raw |> distinct(Gene, Pathway)) |> 
+  group_by(Pathway) |> 
+  group_map(
+    \(d, g) {
+      txt <- glue("### <<g>>\n\n```{r}\n#| output: asis\n#| echo: false\ngt::gt(d) \n```\n", .open = "<<", .close = ">>")
+      knitr::knit_child(text = txt, envir = new.env(parent = environment()), quiet = TRUE)
+    }
+  ) |> unlist() |> cat(sep = '\n')
+```
+
+:::
+
+## Models
+
+Specifying the model to apply to each Gene's DCt values:
+
+:::{.callout-note}
+When there are several experiments (plates) for a Gene, a random intercept per Experiment is added.
+:::
+
+```{r}
+model_OS <- function(dat) {
+  contrasts(dat$Condition) <- contr.sum
+  
+  if (n_distinct(dat$Experiment) >= 2) {
+    contrasts(dat$Experiment) <- contr.sum
+    
+    glmmTMB::glmmTMB(
+      DCt ~ Condition + (1 | Experiment),
+      family = gaussian("identity"),
+      data = dat
+    )
+  }
+  else {
+    glmmTMB::glmmTMB(
+      DCt ~ Condition,
+      family = gaussian("identity"),
+      data = dat
+    )
+  }
+}
+```
+
+## Effects Analysis
+
+Computing p-values & contrasts for each Gene (based on Wald t-tests):
+
+```{r}
+#| echo: false
+#| output: false
+
+compute_contrasts <- function(dat, model_prototype) {
+  return(dat
+    |> group_by(Stage, Gene, Condition)
+    |> filter(n() >= 3) # Checking that there is at least 3 values per condition
+    |> group_by(Stage, Gene)
+    |> filter(n_distinct(Condition) >= 2) # Checking that there is at least one N & one H value
+    |> group_split()
+    |> purrr::map_dfr(
+      .f = \(g) {(
+        group_by(g, Stage, Gene)
+        |> summarize(mod = list(model_prototype(cur_data()))) 
+        |> mutate(
+          emmeans::emmeans(mod[[1]], specs = "Condition", type = "response") |> 
+            emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE) |> 
+            as.data.frame() |> 
+            select(Contrast = matches("estimate|risk|odds|^ratio|^difference"), Condition.p = p.value)
+        )
+      )}
+    )
+    |> ungroup()
+  )
+}
+
+data <- (left_join(
+    data_raw,
+    compute_contrasts(data_raw, model_OS) |> select(-mod)
+  )
+  |> select(everything(), -Experiment, p.val = Condition.p)
+  |> add_expression()
+)
+```
+
+❖ **Effects summary:**
+
+```{r}
+#| echo: false
+
+data |> filter(Condition != "N") |> 
+  select(Gene, Pathway, Fold, Contrast, p.val, Expression) |> 
+  distinct(Gene, .keep_all = TRUE) |> 
+  mutate(
+    Fold = round(Fold, 2) |> as.character(),
+    Contrast = round(Contrast, 2) |> as.character(),
+    p.val = label_pval(p.val)
+  )
+```
+
+❖ **Fold change plots:**
+
+:::{.callout-note}
+Only statistically significant genes are displayed.
+:::
+
+```{r}
+#| echo: false
+#| output: asis
+#| fig.height: 12
+
+patchwork::wrap_plots(
+  data |> group_by(Pathway) |> group_map(\(d, g) timeline_fold(d, facet = "Pathway", trans = "log", title = g)),
+  nrow = 3, heights = 4
+)
+```
+

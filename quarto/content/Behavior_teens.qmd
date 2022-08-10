@@ -1,4 +1,4 @@
-# Behavior [Teens]
+# Teens
 
 ```{r}
 #| echo: false
@@ -15,7 +15,7 @@ source(here::here("src", "init.R"), echo = FALSE)
 responses <- c("Grip_Strength")
 predictors <- c("Condition")
 
-data <- load_behavior_teens(config$data$behavior_teens_path)
+data <- load_behavior_teens()
 
 data_agg <- (data 
   |> group_by(Mouse, Condition) 

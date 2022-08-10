@@ -15,7 +15,7 @@ source(here::here("src", "init.R"), echo = FALSE)
 responses <- c("A_DD", "A_DD_per_cell", "A_GLUD2", "Vol_GLUD2")
 predictors <- c("Condition", "Z")
 
-data <- load_GluD2(config$data$GluD2_path) |> select(Sample, Mouse, any_of(predictors), any_of(responses))
+data <- load_GluD2() |> select(Sample, Mouse, any_of(predictors), any_of(responses))
 
 data_agg <- (data
   |> group_by(Mouse, Condition) 

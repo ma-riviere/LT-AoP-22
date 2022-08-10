@@ -55,8 +55,8 @@ project_pkgs <- c(
   "knitr",
   "rmarkdown",
   "quarto",
-  "downlit", # For code linking
-  "xml2", # For code linking
+  "downlit",           # For code linking
+  "xml2",              # For code linking
   "sessioninfo",
   
   ### Misc

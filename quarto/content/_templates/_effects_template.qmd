@@ -10,6 +10,7 @@ is_inter <- stringr::str_detect(pred, pattern = ":")
 
 if (is_inter) {
   inter_preds <- stringr::str_split(pred, pattern = ":")  |> purrr::flatten_chr()
+  second_pred <- setdiff(inter_preds, "Condition")[1]
   
   plot_width <- 2.5 + purrr::reduce(inter_preds, \(acc, c) acc * n_distinct(current_data[[c]]), .init = 1)
   
@@ -24,40 +25,143 @@ if (is_inter) {
 ❖ **Marginal Means:**
 
 ```{r}
-#| eval: !expr (!is_inter)
+#| eval: false
 #| echo: !expr (!is_inter)
 
-emmeans::emmeans(mod, specs = pred, type = "response")
+emmeans(mod, specs = pred, type = "response")
 ```
+
+```{r}
+#| eval: !expr (!is_inter)
+#| echo: false
+#| output: asis
+
+emm <- emmeans(mod, specs = pred, type = "response")
+
+as.data.frame(emm) |> gt::gt()
+```
+
+```{r}
+#| eval: !expr (!is_inter)
+#| echo: false
+
+paste0("- ", summary(emm) |> attr("mesg")) |> cat(sep = "\n")
+```
+
 
 <!--[ For interactions ]--->
 
 ```{r}
-#| eval: !expr is_inter
+#| eval: false
 #| echo: !expr is_inter
 
-emmeans::emmeans(mod, specs = emmeans_formula, type = "response")
+emmeans(mod, specs = emmeans_formula, type = "response")
+```
+
+```{r}
+#| eval: !expr is_inter
+#| echo: false
+#| output: asis
+
+emm_inter <- emmeans(mod, specs = emmeans_formula, type = "response")
+
+cat(":::{.panel-tabset}\n")
+
+as.data.frame(emm_inter) |> 
+  group_by(.data[[second_pred]]) |> 
+  group_map(
+    \(d, g) {
+      txt <- glue("#### `r as.character(g[[second_pred]])`\n\n```{r}\n#| output: asis\n#| echo: false\ngt::gt(d) \n```\n", .open = "<<", .close = ">>")
+      knitr::knit_child(text = txt, envir = new.env(parent = environment()), quiet = TRUE)
+    }
+  ) |> unlist() |> cat(sep = '\n')
+
+cat(":::\n")
+```
+
+```{r}
+#| eval: !expr is_inter
+#| echo: false
+
+paste0("- ", summary(emm_inter) |> attr("mesg")) |> cat(sep = "\n")
 ```
 
 
 ❖ **Contrasts:**
 
 ```{r}
-#| eval: !expr (!is_inter)
+#| eval: false
 #| echo: !expr (!is_inter)
 
-emmeans::emmeans(mod, specs = pred, type = "response") |> 
+emmeans(mod, specs = pred, type = "response") |> 
   contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+```{r}
+#| eval: !expr (!is_inter)
+#| echo: false
+#| output: asis
+
+cont <- emmeans(mod, specs = pred, type = "response") |> 
+  contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+as.data.frame(cont) |> gt::gt()
+```
+
+```{r}
+#| eval: !expr (!is_inter)
+#| echo: false
+
+paste0("- ", summary(cont) |> attr("mesg")) |> cat(sep = "\n")
 ```
 
 <!--[ For interactions ]--->
 
 ```{r}
-#| eval: !expr is_inter
+#| eval: false
 #| echo: !expr is_inter
 
-emmeans::emmeans(mod, specs = emmeans_formula, type = "response") |> 
+emmeans(mod, specs = emmeans_formula, type = "response") |> 
   contrast(method = "pairwise", adjust = "none", infer = TRUE)
+```
+
+```{r}
+#| eval: !expr is_inter
+#| echo: false
+#| output: asis
+
+cont_inter <- emmeans(mod, specs = emmeans_formula, type = "response") |> 
+  contrast(method = "pairwise", adjust = "none", infer = TRUE)
+
+cat(":::{.panel-tabset}\n")
+
+as.data.frame(cont_inter) |> 
+  group_by(.data[[second_pred]]) |> 
+  group_map(
+    \(d, g) {
+      txt <- glue("#### `r as.character(g[[second_pred]])`\n\n```{r}\n#| output: asis\n#| echo: false\ngt::gt(d) \n```\n", .open = "<<", .close = ">>")
+      knitr::knit_child(text = txt, envir = new.env(parent = environment()), quiet = TRUE)
+    }
+  ) |> unlist() |> cat(sep = '\n')
+
+cat(":::\n")
+```
+
+```{r}
+#| eval: !expr is_inter
+#| echo: false
+
+paste0("- ", summary(cont_inter) |> attr("mesg")) |> cat(sep = "\n")
+```
+
+
+
+```{r}
+#| eval: false
+#| echo: !expr is_inter
+
+emmeans(mod, specs = emmeans_formula, type = "response") |>
+  contrast(interaction = "pairwise", by = NULL, adjust = "none", infer = T)
 ```
 
 ```{r}
@@ -65,25 +169,36 @@ emmeans::emmeans(mod, specs = emmeans_formula, type = "response") |>
 #| echo: false
 #| output: false
 
-emm <- emmeans::emmeans(mod, specs = emmeans_formula, type = "response") |>
+cont_inter2 <- emmeans(mod, specs = emmeans_formula, type = "response") |>
   contrast(interaction = "pairwise", by = NULL, adjust = "none", infer = TRUE)
 
-emm@grid <- rename_with(emm@grid, \(c) stringr::str_remove(c, pattern = "_pairwise"))
+cont_inter2@grid <- rename_with(cont_inter2@grid, \(c) stringr::str_remove(c, pattern = "_pairwise"))
 ```
 
 ```{r}
-#| eval: false
-#| echo: !expr is_inter
+#| eval: !expr is_inter
+#| echo: false
+#| output: asis
 
-emmeans::emmeans(mod, specs = emmeans_formula, type = "response") |>
-  contrast(interaction = "pairwise", by = NULL, adjust = "none", infer = T)
+cat(":::{.panel-tabset}\n")
+
+as.data.frame(cont_inter2) |> 
+  group_by(.data[[second_pred]]) |> 
+  group_map(
+    \(d, g) {
+      txt <- glue("#### `r as.character(g[[second_pred]])`\n\n```{r}\n#| output: asis\n#| echo: false\ngt::gt(d) \n```\n", .open = "<<", .close = ">>")
+      knitr::knit_child(text = txt, envir = new.env(parent = environment()), quiet = TRUE)
+    }
+  ) |> unlist() |> cat(sep = '\n')
+
+cat(":::\n")
 ```
 
 ```{r}
 #| eval: !expr is_inter
 #| echo: false
 
-emm
+paste0("- ", summary(cont_inter2) |> attr("mesg")) |> cat(sep = "\n")
 ```
 
 
@@ -95,7 +210,7 @@ emm
 
 boxplot <- make_signif_boxplot(mod, xaxis = pred)
 
-if (toupper(pred) != "CONDITION") boxplot <- boxplot + scale_color_viridis_d()
+if (toupper(pred) != "CONDITION") boxplot <- boxplot + scale_color_viridis_d() + scale_fill_viridis_d()
 ```
 
 ```{r}

@@ -12,7 +12,7 @@ source(here::here("src", "init.R"), echo = FALSE)
 ```{r}
 #| echo: false
 
-data <- (load_Casp_Act(config$data$casp_Act_path) 
+data <- (load_Casp_Act() 
  |> group_by(Experiment, Condition)
  |> mutate(Avg_N = ifelse(Condition == "N", mean(Fluo_Norm), NA))
  |> group_by(Experiment)

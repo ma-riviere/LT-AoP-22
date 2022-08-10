@@ -17,16 +17,46 @@ if (is_temporal) effects_template_path <- config$templates$effects_temporal
 
 ### Data Exploration
 
+❖ **Distribution:**
+
 ```{r}
 #| echo: false
-#| output: asis
+#| output: false
 
 dist_data <- distribution_summary(data, dvs = current_response, between = current_predictor_set) |> select(-Variable)
 
-gt::gt(dist_data) |> 
-  tab_row_group(label = "Intermittent Hypoxia", rows = Condition == "IH", id = "IH") |> 
-  tab_row_group(label = "Normoxia", rows = Condition == "N", id = "N")
+second_pred <- ifelse(length(current_predictor_set) > 1, setdiff(current_predictor_set, "Condition")[1], NA_character_)
 ```
+
+```{r}
+#| echo: false
+#| eval: !expr (is.na(second_pred))
+#| output: asis
+
+gt::gt(dist_data)
+```
+
+```{r}
+#| echo: false
+#| eval: !expr (!is.na(second_pred))
+#| output: asis
+
+cat(":::{.panel-tabset}\n")
+
+dist_data |> 
+  group_by(.data[[second_pred]]) |> 
+  group_map(
+    \(d, g) {
+      txt <- glue("#### `r as.character(g[[second_pred]])`\n\n```{r}\n#| output: asis\n#| echo: false\ngt::gt(d) \n```\n", .open = "<<", .close = ">>")
+      knitr::knit_child(text = txt, envir = new.env(parent = environment()), quiet = TRUE)
+    }
+  ) |> unlist() |> cat(sep = '\n')
+
+
+cat(":::\n")
+```
+
+<!-------------------------------------------------------->
 
 ```{r}
 #| echo: false
@@ -53,7 +83,7 @@ hist_plot(data, var = current_response, facet2 = pred2)
 #| echo: false
 #| output: asis
 
-cat("♦ Evolution:")
+cat("❖ **Evolution:**")
 ```
 
 ```{r}
@@ -158,8 +188,8 @@ print_model_call(mod)
 #| output: false
 
 all_effects <- parameters::parameters(
-  mod, exponentiate = should_exp(mod), component = "conditional",
-  p_adjust = "none", summary = TRUE, digits = 3
+  mod, component = "conditional", effects = "fixed",
+  exponentiate = should_exp(mod), p_adjust = "none", summary = TRUE, digits = 3
 )
 ```
 
@@ -167,8 +197,8 @@ all_effects <- parameters::parameters(
 #| eval: false
 
 parameters::parameters(
-  mod, exponentiate = should_exp(mod), component = "conditional",
-  p_adjust = "none", summary = TRUE, digits = 3
+  mod, component = "conditional", effects = "fixed",
+  exponentiate = should_exp(mod), p_adjust = "none", summary = TRUE, digits = 3
 )
 ```
 

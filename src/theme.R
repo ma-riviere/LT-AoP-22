@@ -186,7 +186,7 @@ gt_style_dark <- function(gt_tbl) {
   )
   
   if (nrow(gt_tbl[["_data"]]) > 2) 
-    gt_tbl <- gt_tbl |> gtExtras::gt_highlight_rows(rows = seq(2, nrow(gt_tbl[["_data"]]), by = 2), fill = "#1e1e1e", font_weight = "normal")
+    gt_tbl <- gt_tbl |> gtExtras::gt_highlight_rows(rows = seq(2, nrow(gt_tbl[["_data"]]), by = 2), fill = "#1e1e1e", font_weight = "normal", alpha = 0.5)
   
   return(gt_tbl)
 }

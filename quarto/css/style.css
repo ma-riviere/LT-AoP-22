@@ -10,3 +10,7 @@ code { font-family: 'Fira Code', monospace; }
 hr {
   border-top: 8px double;
 }
+
+.paper-title {
+  font-size: 1.4rem;
+}

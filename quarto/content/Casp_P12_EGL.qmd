@@ -1,4 +1,4 @@
-# Caspase [P12] (EGL)
+# Caspase (EGL)
 
 ```{r}
 #| echo: false
