@@ -49,7 +49,7 @@ rsconnect/
 
 /.quarto/
 _freeze/
-site_libs/
+/site_libs/
 quarto/*_files/
 quarto/content/*_files/
 quarto/content/*.html
