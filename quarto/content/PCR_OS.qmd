@@ -12,11 +12,11 @@ source(here::here("src", "init.R"), echo = FALSE)
 ```{r}
 #| echo: false
 
-data_raw <- load_PCR_OS(max_Ct_allowed = 33)
+data_raw <- load_PCR_OS(max_Cq_allowed = 33)
 
 Experiment_name <- "ID of the experimental batch (different plates)"
 Pathway_name <- "Biological pathway the Gene is involved in"
-DCt_name <- "Delta Ct"
+DCq_name <- "Delta Cq"
 Fold_name <- "Fold change"
 
 data_raw
@@ -41,7 +41,7 @@ Split by `Pathway`:
 #| echo: false
 #| output: asis
 
-distribution_summary(data_raw, dvs = "DCt", between = c("Gene", "Condition")) |> 
+distribution_summary(data_raw, dvs = "DCq", between = c("Gene", "Condition")) |> 
   select(-Variable) |> 
   left_join(data_raw |> distinct(Gene, Pathway)) |> 
   group_by(Pathway) |> 
@@ -57,7 +57,7 @@ distribution_summary(data_raw, dvs = "DCt", between = c("Gene", "Condition")) |>
 
 ## Models
 
-Specifying the model to apply to each Gene's DCt values:
+Specifying the model to apply to each Gene's DCq values:
 
 :::{.callout-note}
 When there are several experiments (plates) for a Gene, a random intercept per Experiment is added.
@@ -71,14 +71,14 @@ model_OS <- function(dat) {
     contrasts(dat$Experiment) <- contr.sum
     
     glmmTMB::glmmTMB(
-      DCt ~ Condition + (1 | Experiment),
+      DCq ~ Condition + (1 | Experiment),
       family = gaussian("identity"),
       data = dat
     )
   }
   else {
     glmmTMB::glmmTMB(
-      DCt ~ Condition,
+      DCq ~ Condition,
       family = gaussian("identity"),
       data = dat
     )

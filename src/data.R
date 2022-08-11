@@ -476,7 +476,7 @@ load_ROS <- function(path = config$data$IHC$ROS_path) {
 #### qPCR Data ####
 #-----------------#
 
-load_PCR_OS <- function(path = config$data$PCR$OS_P12_path, max_Ct_allowed = 33) {
+load_PCR_OS <- function(path = config$data$PCR$OS_P12_path, max_Cq_allowed = 33) {
   return(
     read_excel(path)
     |> mutate(
@@ -484,10 +484,10 @@ load_PCR_OS <- function(path = config$data$PCR$OS_P12_path, max_Ct_allowed = 33)
       Stage = factor(Stage),
       Experiment = factor(Experiment)
     )
-    |> filter(Mean.Ct <= max_Ct_allowed)
+    |> filter(Mean.Cq <= max_Cq_allowed)
     |> add_fold_change()
     |> add_pathways()
-    |> select(Experiment, Mouse, Stage, Pathway, Gene, Condition, DCt, Fold)
+    |> select(Experiment, Mouse, Stage, Pathway, Gene, Condition, DCq, Fold)
   )
 }
 
@@ -497,7 +497,7 @@ load_PCR_OS <- function(path = config$data$PCR$OS_P12_path, max_Ct_allowed = 33)
 add_fold_change <- function(data) {
   return(data 
     |> group_by(Experiment, Stage, Gene, Condition)
-    |> mutate(avg.dct = mean(DCt), avg.N = mean(DCt))
+    |> mutate(avg.dct = mean(DCq), avg.N = mean(DCq))
     |> ungroup()
     |> mutate(avg.N = ifelse(Condition == "N", avg.N, NA))
     |> group_by(Experiment, Stage, Gene)

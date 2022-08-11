@@ -114,6 +114,7 @@ format:
       light: quarto/highlight-styles/style-light.theme
       dark: quarto/highlight-styles/style-dark.theme
     link-external-newwindow: true
+    include-in-header: quarto/html/paged.html # Fixing paged table display issues
 
 engine: knitr
 
