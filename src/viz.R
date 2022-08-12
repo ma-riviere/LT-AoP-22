@@ -385,11 +385,11 @@ make_signif_boxplot <- function(
     + geom_boxplot(outlier.alpha = 0, size = 1.1, fill = NA)
     + stat_summary(fun = mean, geom = "errorbar", aes(ymax = ..y.., ymin = ..y..), width = 0.75, size = 1.1, linetype = "dotted")
     + { if (!is.null(cluster)) geom_jitter(
-            data = \(x) x |> group_by(across(any_of(c(xaxis, facet)))) |> slice_sample(n = 50), 
+            data = \(x) x |> group_by(across(any_of(c(xaxis, facet)))) |> group_modify(\(d, g) slice_sample(d, n = min(nrow(d), 50))) |> ungroup(), 
             size = 1.5, width = 0.1, alpha = 0.3
           )
         else geom_jitter(
-          data = \(x) x |> group_by(across(any_of(c(xaxis, facet)))) |> slice_sample(n = 50), 
+          data = \(x) x |> group_by(across(any_of(c(xaxis, facet)))) |> group_modify(\(d, g) slice_sample(d, n = min(nrow(d), 50))) |> ungroup(), 
           mapping = aes_string(fill = xaxis), shape = 23, color = color_text_bi, size = 3, width = 0.1, alpha = 0.9
         )
     }
@@ -544,11 +544,11 @@ make_signif_boxplot_inter <- function(
     + geom_boxplot(outlier.alpha = 0, size = 1.1, fill = NA)
     + stat_summary(fun = mean, geom = "errorbar", aes(ymax = ..y.., ymin = ..y..), width = 0.75, size = 1.1, linetype = "dotted")
     + { if (!is.null(cluster)) geom_jitter(
-          data = \(x) x |> group_by(across(any_of(c(xaxis, facet)))) |> slice_sample(n = 50), 
+          data = \(x) x |> group_by(across(any_of(c(xaxis, facet)))) |> group_modify(\(d, g) slice_sample(d, n = min(nrow(d), 50))) |> ungroup(), 
           size = 1.5, width = 0.1, alpha = 0.3
         )
       else geom_jitter(
-        data = \(x) x |> group_by(across(any_of(c(xaxis, facet)))) |> slice_sample(n = 50), 
+        data = \(x) x |> group_by(across(any_of(c(xaxis, facet)))) |> group_modify(\(d, g) slice_sample(d, n = min(nrow(d), 50))) |> ungroup(), 
         mapping = aes_string(fill = xaxis), shape = 23, color = color_text_bi, size = 3, width = 0.1, alpha = 0.9
       )
     }
