@@ -118,7 +118,7 @@ Simulating data from the model for pseudo "Posterior Predictive" plots.
 ```{r}
 #| echo: false
 
-mod_dharma <- DHARMa::simulateResiduals(mod, n = 100, plot = FALSE)
+mod_dharma <- DHARMa::simulateResiduals(mod, n = 50, plot = FALSE)
 mod_dharma_t <- t(mod_dharma$simulatedResponse)
 ```
 

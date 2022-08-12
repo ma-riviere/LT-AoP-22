@@ -338,10 +338,10 @@ make_signif_boxplot <- function(
   resp <- insight::find_response(mod)
   if(is.null(resp_name)) resp_name <- get_response_name(resp)
   
-  dat <- dat |> group_by(across(any_of(c(xaxis, facet)))) |> mutate(N = glue("N = {get_n_units(cur_data())}")) |> ungroup()
-  
   ## Making sure the variables of interest are contrasts for emmeans
   dat <- dat |> mutate(across(c(any_of(c(xaxis, facet)) & where(\(c) !is.factor(c))), as.factor))
+  
+  extra_dat <- dat |> group_by(across(any_of(c(xaxis, facet)))) |> summarize(N = glue("N = {get_n_units(cur_data())}")) |> ungroup()
   
   max <- max(dat[[resp]])
   min <- min(dat[[resp]])
@@ -384,12 +384,18 @@ make_signif_boxplot <- function(
   plot <- (ggplot(dat, aes_string(x = xaxis, y = resp, color = xaxis, fill = xaxis))
     + geom_boxplot(outlier.alpha = 0, size = 1.1, fill = NA)
     + stat_summary(fun = mean, geom = "errorbar", aes(ymax = ..y.., ymin = ..y..), width = 0.75, size = 1.1, linetype = "dotted")
-    + { if (!is.null(cluster)) geom_jitter(size = 2, width = 0.1, alpha = 0.3)
-        else geom_jitter(aes_string(fill = xaxis), shape = 23, color = color_text_bi, size = 3, width = 0.1, alpha = 0.8)
+    + { if (!is.null(cluster)) geom_jitter(
+            data = \(x) x |> group_by(across(any_of(c(xaxis, facet)))) |> slice_sample(n = 50), 
+            size = 1.5, width = 0.1, alpha = 0.3
+          )
+        else geom_jitter(
+          data = \(x) x |> group_by(across(any_of(c(xaxis, facet)))) |> slice_sample(n = 50), 
+          mapping = aes_string(fill = xaxis), shape = 23, color = color_text_bi, size = 3, width = 0.1, alpha = 0.9
+        )
     }
     + {if (add_cluster_averages) stat_summary(
       aes_string(group = cluster, fill = xaxis), geom = "point", fun = mean, 
-      size = ifelse(is.null(facet), 4, 3), shape = 23, color = color_text_bi, alpha = 0.8, position = position_dodge(0.2)
+      size = ifelse(is.null(facet), 4, 3), shape = 23, color = color_text_bi, alpha = 0.9, position = position_dodge(0.2)
     )}
     + geom_errorbarh(
       data = p_data_contrasts, aes(xmin = x1, xmax = x2, y = pos.y), inherit.aes = FALSE, 
@@ -401,7 +407,7 @@ make_signif_boxplot <- function(
     )
     + geom_label(
       aes(y = min - 0.05 * amp, fontface = "bold", label = N, color = .data[[xaxis]]),
-      fill = NA, size = 5, alpha = 0.7
+      data = extra_dat, fill = NA, size = 5, alpha = 0.7
     )
     + theme(
       legend.position = "none", 
@@ -471,10 +477,10 @@ make_signif_boxplot_inter <- function(
   resp <- insight::find_response(mod)
   if(is.null(resp_name)) resp_name <- get_response_name(resp)
   
-  dat <- dat |> group_by(across(any_of(c(xaxis, facet)))) |> mutate(N = glue("N = {get_n_units(cur_data())}")) |> ungroup()
-  
   ## Making sure the variables of interest are contrasts for emmeans
   dat <- dat |> mutate(across(c(any_of(c(xaxis, facet)) & where(\(c) !is.factor(c))), as.factor))
+  
+  extra_dat <- dat |> group_by(across(any_of(c(xaxis, facet)))) |> summarize(N = glue("N = {get_n_units(cur_data())}")) |> ungroup()
   
   max <- max(dat[[resp]])
   min <- min(dat[[resp]])
@@ -537,12 +543,18 @@ make_signif_boxplot_inter <- function(
   plot <- (ggplot(dat, aes(x = interaction(.data[[xaxis]], .data[[facet]], sep = "_"), y = .data[[resp]], color = .data[[xaxis]]))
     + geom_boxplot(outlier.alpha = 0, size = 1.1, fill = NA)
     + stat_summary(fun = mean, geom = "errorbar", aes(ymax = ..y.., ymin = ..y..), width = 0.75, size = 1.1, linetype = "dotted")
-    + { if (!is.null(cluster)) geom_jitter(size = 2, width = 0.1, alpha = 0.3)
-      else geom_jitter(aes_string(fill = xaxis), shape = 23, color = color_text_bi, size = 3, width = 0.1, alpha = 0.8)
+    + { if (!is.null(cluster)) geom_jitter(
+          data = \(x) x |> group_by(across(any_of(c(xaxis, facet)))) |> slice_sample(n = 50), 
+          size = 1.5, width = 0.1, alpha = 0.3
+        )
+      else geom_jitter(
+        data = \(x) x |> group_by(across(any_of(c(xaxis, facet)))) |> slice_sample(n = 50), 
+        mapping = aes_string(fill = xaxis), shape = 23, color = color_text_bi, size = 3, width = 0.1, alpha = 0.9
+      )
     }
     + {if (add_cluster_averages) stat_summary(
       aes_string(group = cluster, fill = xaxis), geom = "point", fun = mean, 
-      size = 3, shape = 23, color = color_text_bi, alpha = 0.8, position = position_dodge(0.2)
+      size = 3, shape = 23, color = color_text_bi, alpha = 0.9, position = position_dodge(0.2)
     )}
     + geom_errorbarh(
       data = p_data_contrasts, aes(xmin = paste(X1, .data[[facet]], sep = "_"), xmax = paste(X2, .data[[facet]], sep = "_"), y = pos.y), inherit.aes = FALSE,
@@ -552,7 +564,10 @@ make_signif_boxplot_inter <- function(
       data = p_data_contrasts, aes(x = pos.x, y = pos.y, label = p.signif), inherit.aes = FALSE,
       size = 5, color = color_text_bi, fontface = "bold", vjust = 0, hjust = 0.5, position = position_nudge(y = 0.02 * amp)
     )
-    + geom_label(aes(y = min - 0.05 * amp, fontface = "bold", label = N, color = .data[[xaxis]]), fill = NA, size = 5, alpha = 0.7)
+    + geom_label(
+      aes(y = min - 0.05 * amp, fontface = "bold", label = N, color = .data[[xaxis]]), 
+      data = extra_dat, fill = NA, size = 5, alpha = 0.7
+    )
     ## Interactions
     + geom_errorbarh(
       data = p_data_interactions, aes(xmin = x1, xmax = x2, y = pos.y), inherit.aes = FALSE,
