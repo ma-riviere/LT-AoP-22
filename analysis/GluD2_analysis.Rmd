@@ -12,7 +12,7 @@ source("../src/setup.R", echo = F)
 
 GluD2_target <- "GluD2"
 
-(GluD2_data <- load_GluD2(config$data$GluD2_path) |> select(-N_CC))
+(GluD2_data <- load_GluD2() |> select(-N_CC))
 
 ### Variables:
 

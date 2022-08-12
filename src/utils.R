@@ -10,13 +10,22 @@ log.main("[UTILS] Loading Utils ...")
 
 "%ne%" <- \(lhs, rhs) if(is.null(lhs) || rlang::is_empty(lhs) || lhs == "") return(rhs) else return(lhs)
 
-label_pval <- \(p) paste0(scales::pvalue(p), gtools::stars.pval(p), sep = " ")
+label_pval <- \(p) ifelse(p <= alpha, str_c(scales::label_pvalue()(p), gtools::stars.pval(p) |> str_replace(fixed("."), ""), sep = " "), scales::label_pvalue()(p))
 
 get_response_name <- function(var) {
   if(exists(paste0(var, "_name"))) return(eval(parse(text = get_var_name(!!paste0(var, "_name")))))
   else return(var)
 }
 
+describe_variables <- function(dat) {
+  return(
+    data.frame(Variable = colnames(dat))
+    |> mutate(Description = Vectorize(get_response_name)(Variable) |> str_remove_all("\n")) # |> str_remove_all(fixed("*"))
+    |> filter(Variable != Description)
+    |> gt()
+    |> fmt_markdown(columns = Description)
+  )
+}
 
 get_model_family <- function(mod) {
   family <- insight::get_family(mod)$family |> stringr::str_to_sentence()

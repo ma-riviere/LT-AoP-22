@@ -14,7 +14,7 @@ vglut_target <- "VGlut"
 
 # --------------------------------
 
-(vglut_data <- load_vglut(config$data$vglut_path))
+(vglut_data <- load_vglut())
 
 ### Variables:
 

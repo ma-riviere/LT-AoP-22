@@ -1,0 +1,146 @@
+```{r include = F, echo = F}
+source("../src/setup.R", echo = F)
+```
+
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# I. Data:
+***
+
+```{r data}
+
+PCR_OS_target <- "PCR"
+
+PCR_OS_data_raw <- load_PCR_OS(max_Cq_allowed = 33)
+
+### Variables:
+
+PCR_OS_responses <- c("DCq")
+PCR_OS_predictors <- c("Stage", "Condition", "Pathway")
+
+Experiment_name <- "ID of the experimental batch (different plates)"
+Pathway_name <- "Biological pathway the Gene is involved in"
+DCq_name <- "Delta Cq"
+Fold_name <- "Fold change"
+```
+
+```{r}
+PCR_OS_data_raw |> filter(if_any(everything(), \(c) is.na(c)))
+```
+
+
+<!------------------------------------------------------------------------------>
+<!------------------------------------------------------------------------------>
+***
+# II. DCq:
+***
+
+<!------------------------------------------------------------------------------>
+## 1. Data Exploration:
+
+```{r}
+distribution_summary(PCR_OS_data_raw, dvs = "DCq", between = c("Gene", "Condition")) |> 
+  select(-Variable) |> 
+  left_join(PCR_OS_data_raw |> distinct(Gene, Pathway)) |> 
+  group_by(Pathway) |> 
+  group_split()
+```
+
+
+<!------------------------------------------------------------------------------>
+## 2. Models:
+***
+
+Specifying the model to apply to each Gene's DCq values. 
+
+When there are several experiments (plates) for a Gene, a random intercept per Experiment is added.
+
+```{r}
+model_OS <- function(dat) {
+  contrasts(dat$Condition) <- contr.sum
+  
+  if (n_distinct(dat$Experiment) >= 2) {
+    contrasts(dat$Experiment) <- contr.sum
+    
+    glmmTMB::glmmTMB(
+      DCq ~ Condition + (1 | Experiment),
+      family = gaussian("identity"),
+      data = dat
+    )
+  }
+  else {
+    glmmTMB::glmmTMB(
+      DCq ~ Condition,
+      family = gaussian("identity"),
+      data = dat
+    )
+  }
+}
+```
+
+
+<!------------------------------------------------------------------------------>
+## 3. Effects Analysis:
+***
+
+**Condition:**
+
+Marginal Means & Contrasts:
+
+```{r}
+compute_contrasts <- function(dat, model_prototype) {
+  return(dat
+    |> group_by(Stage, Gene, Condition)
+    |> filter(n() >= 3) # Checking that there is at least 3 values per condition
+    |> group_by(Stage, Gene)
+    |> filter(n_distinct(Condition) >= 2) # Checking that there is at least one N & one H value
+    |> group_split()
+    |> purrr::map_dfr(
+      .f = \(g) {(
+        group_by(g, Stage, Gene)
+        |> summarize(mod = list(model_prototype(cur_data()))) 
+        |> mutate(
+          emmeans::emmeans(mod[[1]], specs = "Condition", type = "response") |> 
+            emmeans::contrast(method = "pairwise", adjust = "none", infer = TRUE) |> 
+            as.data.frame() |> 
+            select(Contrast = matches("estimate|risk|odds|^ratio|^difference"), Condition.p = p.value)
+        )
+      )}
+    )
+    |> ungroup()
+  )
+}
+
+PCR_OS_data <- (left_join(
+    PCR_OS_data_raw,
+    compute_contrasts(PCR_OS_data_raw, model_OS) |> select(-mod)
+  )
+  |> select(everything(), -Experiment, p.val = Condition.p)
+  |> add_expression()
+)
+```
+
+```{r}
+PCR_OS_data |> filter(Condition != "N") |> 
+  select(Gene, Pathway, Fold, Contrast, p.val, Expression) |> 
+  distinct(Gene, .keep_all = TRUE) |> 
+  mutate(
+    Fold = round(Fold, 3),
+    Contrast = round(Contrast, 3),
+    p.val = label_pval(p.val)
+  )
+```
+
+Plots:
+
+```{r}
+#| fig.height: 2
+#| fig.width: 6
+
+PCR_OS_data |> 
+  group_by(Pathway) |> 
+  group_map(\(d, g) timeline_fold(d, facet = "Pathway", trans = "log", title = g) |> 
+                      save_png(filename = glue("Fold Change - {g$Pathway}"), subfolder = PCR_OS_target, dpi = dpi_save_png, width = 6, height = 3))
+```

@@ -44,14 +44,3 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
-
-*.pptx
-
-/.quarto/
-_freeze/
-
-quarto/*_files/
-quarto/content/*_files/
-fig/_images
-fig/_layout
-analysis/_Layouts.*

@@ -13,7 +13,7 @@ source("../src/setup.R", echo = F)
 
 Calb_P12_target <- "Calb-P12"
 
-(Calb_P12_data <- load_Calb_P12(config$data$calb_P12_path))
+(Calb_P12_data <- load_Calb_P12())
 
 ### Variables:
 

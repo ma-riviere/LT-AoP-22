@@ -12,7 +12,7 @@ source("../src/setup.R", echo = F)
 
 Casp_Act_target <- "Casp-Act"
 
-(Casp_Act_data <- load_Casp_Act(config$data$casp_Act_path))
+(Casp_Act_data <- load_Casp_Act())
 
 ### Variables:
 

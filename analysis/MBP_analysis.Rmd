@@ -12,7 +12,7 @@ source("../src/setup.R", echo = F)
 
 mbp_target <- "MBP"
 
-(mbp_data <- load_mbp(config$data$mbp_path))
+(mbp_data <- load_mbp())
 
 ### Variables:
 

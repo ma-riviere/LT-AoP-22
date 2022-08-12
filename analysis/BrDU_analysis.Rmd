@@ -12,7 +12,7 @@ source("../src/setup.R", echo = F)
 
 BrDU_target <- "BrDU"
 
-(BrDU_data <- load_BrDU(config$data$brDU_path) |> 
+(BrDU_data <- load_BrDU() |> 
     group_by(Layer) |> 
     group_modify(\(d, g) mutate(d, !!paste0("Dens_BrDU_", g[["Layer"]][[1]]) := Dens_BrDU)) |> 
     ungroup()

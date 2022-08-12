@@ -12,7 +12,7 @@ source("../src/setup.R", echo = F)
 
 DAPI_Density_P12_target <- "DAPI_Density_P12"
 
-(DAPI_Density_P12_data <- load_dapi_density_P12(config$data$dapi_density_P12_path))
+(DAPI_Density_P12_data <- load_dapi_density_P12())
 
 ### Variables:
 

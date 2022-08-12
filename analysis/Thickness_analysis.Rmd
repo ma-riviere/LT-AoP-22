@@ -22,7 +22,7 @@ thick_P12_responses <- c(
   "Thick_IGL"
 )
 
-(thick_P12_data <- load_Thickness(config$data$thickness_path, "P12"))
+(thick_P12_data <- load_Thickness(stage = "P12"))
 
 Thick_Total_name <- "Total thickness of the cerebellar cortex *(µm)*"
 Thick_EGL_name <- "EGL thickness *(µm)*"
@@ -46,7 +46,7 @@ thick_P21_responses <- c(
   "Thick_GL"
 )
 
-(thick_P21_data <- load_Thickness(config$data$thickness_path, "P21"))
+(thick_P21_data <- load_Thickness(stage = "P21"))
 
 Thick_GL_name <- "GL thickness *(µm)*"
 
@@ -63,7 +63,7 @@ thick_P21_data_agg <- thick_P21_data |>
 
 thick_responses <- c("Thick_Total", "Thick_MLPL", "Prop_Thick_MLPL_in_Thick_Tot", "Thick_IGL", "Prop_Thick_IGL_in_Thick_Tot", "Thick_EGL")
 
-(thick_data <- load_Thickness(config$data$thickness_path)
+(thick_data <- load_Thickness()
   |> mutate(
     Thick_IGL = coalesce(Thick_IGL, Thick_GL),
     Stage = factor(Stage),

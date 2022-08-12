@@ -12,7 +12,7 @@ source("../src/setup.R", echo = F)
 
 DAPI_ML_Ad_target <- "DAPI_ML_Adult"
 
-(DAPI_ML_Ad_data <- load_dapi_ml_ad(config$data$dapi_ml_ad_path))
+(DAPI_ML_Ad_data <- load_dapi_ml_ad())
 
 ### Variables:
 
@@ -470,6 +470,7 @@ performance(DAPI_ML_Ad_mod_A_DAPI_gauss)
 
 ```{r}
 DAPI_ML_Ad_mod_A_DAPI_gamma <- glmmTMB(
+  A_DAPI ~ Condition * Z + offset(A_ML) + (1 | Mouse),
   family = Gamma("log"),
   data = DAPI_ML_Ad_data,
   REML = T

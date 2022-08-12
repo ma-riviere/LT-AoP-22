@@ -32,15 +32,17 @@ project_pkgs <- c(
   
   ### Model analysis
   "broom",
-  "easystats/insight",
-  "easystats/datawizard",
+  "insight",
+  "datawizard",
   "performance",
   "correlation",
-  "easystats/parameters",
+  "psych",
+  "parameters",
   "DHARMa",
   "emmeans",
   
   ### Visualizations
+  "wilkelab/gridtext",
   "ggplot2",
   "ggtext",
   "patchwork",
@@ -51,7 +53,6 @@ project_pkgs <- c(
 
   ### Reporting
   "gt",
-  "quarto",
   
   ### Misc
   "glue", 

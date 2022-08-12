@@ -13,7 +13,7 @@ source("../src/setup.R", echo = F)
 
 ROS_target <- "ROS"
 
-(ROS_data <- load_ROS(config$data$ROS_path))
+(ROS_data <- load_ROS())
 
 ### Variables:
 
@@ -251,6 +251,6 @@ emmeans::emmeans(ROS_mod_perc, specs = "Condition", trans = "response") |>
 Plot:
 
 ```{r fig.width = 5, fig.height = 8}
-make_signif_boxplot(ROS_mod_perc, xaxis = "Condition", cluster = NULL, add_averages_by = NULL) |> 
+make_signif_boxplot(ROS_mod_perc, xaxis = "Condition") |> 
   save_png(filename = glue("[{get_model_tag(ROS_mod_perc)}] Boxplots - by [Condition]"), subfolder = ROS_target, dpi = dpi_save_png, width = 5, height = 8)
 ```

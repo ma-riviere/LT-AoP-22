@@ -3,7 +3,7 @@
  <h1>Intermittent hypoxia and cerebellar development</h1>
  <h3><i>Main branch</i></h3>
 
- [![License](https://img.shields.io/badge/license-MIT-blue.svg)](/LICENSE)
+ [![License](https://img.shields.io/badge/license-CCBY-blue.svg)](/LICENSE)
  [![DOI](https://zenodo.org/badge/484983414.svg)](https://zenodo.org/badge/latestdoi/484983414)
  
  <a href = "https://ma-riviere.github.io/LT-AoP-22/">Link to the documentation</a>
@@ -16,11 +16,11 @@ Data and R companion code for (Leroux S., Rodriguez-Duboc A., Arabo A., Basille-
 
 - **Paper:** *In Press*  
 
-- **Code:** Marc-Aurèle Rivière, & Agalic Rodriguez-Duboc. (2022). ma-riviere/LT-AoP-22: public release (v1.1). Zenodo. https://doi.org/10.5281/zenodo.6480947
+- **Code:** Marc-Aurèle Rivière, & Agalic Rodriguez-Duboc. (2022). ma-riviere/LT-AoP-22: final release (v2.0). Zenodo. https://doi.org/10.5281/zenodo.6480947
 
 ## ❔ Requirements:
 
-- R version 4.1 or 4.2
+- R version 4.1 or newer (4.2.1 recommended)
 
 ## 💻 Repository structure:
 
@@ -34,7 +34,7 @@ Data and R companion code for (Leroux S., Rodriguez-Duboc A., Arabo A., Basille-
 
 ## 📜 Licence:
 
-[MIT](LICENSE)
+[CC-BY](LICENSE)
 
 ## ✨ Contributors:
 
