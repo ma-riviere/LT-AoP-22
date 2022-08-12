@@ -3,7 +3,7 @@
  <h1>Intermittent hypoxia and cerebellar development</h1>
  <h3><i>GitHub Pages branch</i></h3>
 
- [![License](https://img.shields.io/badge/license-MIT-blue.svg)](/LICENSE)
+ [![License](https://img.shields.io/badge/license-CCBY-blue.svg)](/LICENSE)
  [![DOI](https://zenodo.org/badge/484983414.svg)](https://zenodo.org/badge/latestdoi/484983414)
  
  <a href = "https://ma-riviere.github.io/LT-AoP-22/">Link to the documentation</a>
@@ -36,7 +36,7 @@ Data and R companion code for (Leroux S., Rodriguez-Duboc A., Arabo A., Basille-
 
 ## 📜 Licence:
 
-[MIT](LICENSE)
+[CC-BY](LICENSE)
 
 ## ✨ Contributors:
 
