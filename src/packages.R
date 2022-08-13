@@ -4,8 +4,6 @@
 
 project_pkgs <- c(
   ### Base packages
-  "renv", 
-  "here", 
   "config", 
   "rlang", 
   "fs",

@@ -68,14 +68,6 @@
       "Hash": "45f0398006e83a5b10b72a90663d8d8c",
       "Requirements": []
     },
-    "RCurl": {
-      "Package": "RCurl",
-      "Version": "1.98-1.7",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "b70bf7bef94b2a3fa09795b0594f3695",
-      "Requirements": []
-    },
     "Rcpp": {
       "Package": "Rcpp",
       "Version": "1.0.9",
@@ -112,6 +104,17 @@
       "Repository": "CRAN",
       "Hash": "2042cd9759cc89a453c4aefef0ce9aae",
       "Requirements": []
+    },
+    "TMB": {
+      "Package": "TMB",
+      "Version": "1.9.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "346e8354fc05d6b6c6db1cf33ae14d18",
+      "Requirements": [
+        "Matrix",
+        "RcppEigen"
+      ]
     },
     "TTR": {
       "Package": "TTR",
@@ -451,16 +454,11 @@
     },
     "datawizard": {
       "Package": "datawizard",
-      "Version": "0.4.1",
+      "Version": "0.5.0",
       "Source": "Repository",
-      "Repository": "https://easystats.r-universe.dev",
-      "RemoteUrl": "https://github.com/easystats/datawizard",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "3a1ec468077bc0649c183b3e174a3fd9b195063d",
-      "Hash": "b1d9b9d4f73830cea95ed48f3d64be2e",
-      "Requirements": [
-        "insight"
-      ]
+      "Repository": "CRAN",
+      "Hash": "3ddf1a47abf253eb70c3294a602b196e",
+      "Requirements": []
     },
     "desc": {
       "Package": "desc",
@@ -744,6 +742,21 @@
         "gridtext",
         "rlang",
         "scales"
+      ]
+    },
+    "glmmTMB": {
+      "Package": "glmmTMB",
+      "Version": "1.1.4",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "74d5df57a111ee048ce9edc17568c6f5",
+      "Requirements": [
+        "Matrix",
+        "RcppEigen",
+        "TMB",
+        "lme4",
+        "nlme",
+        "numDeriv"
       ]
     },
     "glue": {
@@ -1247,14 +1260,6 @@
         "askpass"
       ]
     },
-    "packrat": {
-      "Package": "packrat",
-      "Version": "0.8.1",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "d84055adcb6bb1f4f0ce8c5f235bc328",
-      "Requirements": []
-    },
     "paletteer": {
       "Package": "paletteer",
       "Version": "1.4.0",
@@ -1558,14 +1563,6 @@
         "survival"
       ]
     },
-    "quarto": {
-      "Package": "quarto",
-      "Version": "1.2",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "298a252816cabed120391c955aced484",
-      "Requirements": []
-    },
     "rappdirs": {
       "Package": "rappdirs",
       "Version": "0.3.3",
@@ -1658,14 +1655,6 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "1de7ab598047a87bba48434ba35d497d",
-      "Requirements": []
-    },
-    "rsconnect": {
-      "Package": "rsconnect",
-      "Version": "0.8.27",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "114103fbb50af041e93921ee67db8fa0",
       "Requirements": []
     },
     "rstudioapi": {
