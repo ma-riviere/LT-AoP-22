@@ -2,7 +2,7 @@ project:
   type: book
   pre-render: src/setup.R
   output-dir: "docs"
-  resources: [.nojekyll, quarto/css/*.scss, quarto.bib, vancouver.csl]
+  resources: [.nojekyll, quarto/css/*.scss]
 
 book:
   title: "Intermittent hypoxia and cerebellar development"
@@ -14,8 +14,6 @@ book:
     - name: "Agalic Rodriguez-Duboc"
       orcid: 0000-0002-2084-3780
   favicon: quarto/favicon.png
-  # twitter-card:
-  #   creator: "@mariviere1"
   repo-url: "https://github.com/ma-riviere/LT-AoP-22/"
   repo-branch: main
   page-navigation: true
@@ -103,9 +101,6 @@ format:
     number-sections: true
     number-depth: 4
     code-link: true
-    # section-divs: false
-    # fig-width: 8
-    # fig-align: center
     fig-dpi: 250
     fig-format: svg
     code-block-bg: true

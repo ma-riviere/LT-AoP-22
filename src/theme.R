@@ -155,7 +155,7 @@ gt_style_light <- function(gt_tbl) {
   )
   
   if (nrow(gt_tbl[["_data"]]) > 2) 
-    gt_tbl <- gt_tbl |> gtExtras::gt_highlight_rows(rows = seq(2, nrow(gt_tbl[["_data"]]), by = 2), fill = "#E9E9E9", font_weight = "normal", alpha = 0.5)
+    gt_tbl <- gt_tbl |> gtExtras::gt_highlight_rows(rows = seq(2, nrow(gt_tbl[["_data"]]), by = 2), fill = "#E9E9E9", font_weight = "normal", alpha = 0.3)
   
   return(gt_tbl)
 }
@@ -186,7 +186,7 @@ gt_style_dark <- function(gt_tbl) {
   )
   
   if (nrow(gt_tbl[["_data"]]) > 2) 
-    gt_tbl <- gt_tbl |> gtExtras::gt_highlight_rows(rows = seq(2, nrow(gt_tbl[["_data"]]), by = 2), fill = "#2c2d2d", font_weight = "normal", alpha = 0.5)
+    gt_tbl <- gt_tbl |> gtExtras::gt_highlight_rows(rows = seq(2, nrow(gt_tbl[["_data"]]), by = 2), fill = "#2c2d2d", font_weight = "normal", alpha = 1)
   
   return(gt_tbl)
 }
