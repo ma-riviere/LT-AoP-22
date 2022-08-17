@@ -65,13 +65,13 @@ emmeans(mod, specs = emmeans_formula, type = "response")
 
 emm_inter <- emmeans(mod, specs = emmeans_formula, type = "response")
 
-cat(":::{.panel-tabset}\n")
+cat("::: {.panel-tabset}\n\n") # TODO: group="facet"
 
 as.data.frame(emm_inter) |> 
   group_by(.data[[second_pred]]) |> 
   group_map(
     \(d, g) {
-      txt <- glue("#### `r as.character(g[[second_pred]])`\n\n```{r}\n#| output: asis\n#| echo: false\ngt::gt(d) \n```\n", .open = "<<", .close = ">>")
+      txt <- glue("\n###### `r as.character(g[[second_pred]])`\n\n```{r}\n#| output: asis\n#| echo: false\n\ngt::gt(d)\n```\n\n", .open = "<<", .close = ">>")
       knitr::knit_child(text = txt, envir = new.env(parent = environment()), quiet = TRUE)
     }
   ) |> unlist() |> cat(sep = '\n')
@@ -133,13 +133,13 @@ emmeans(mod, specs = emmeans_formula, type = "response") |>
 cont_inter <- emmeans(mod, specs = emmeans_formula, type = "response") |> 
   contrast(method = "pairwise", adjust = "none", infer = TRUE)
 
-cat(":::{.panel-tabset}\n")
+cat("::: {.panel-tabset}\n\n") # TODO: group="facet"
 
 as.data.frame(cont_inter) |> 
   group_by(.data[[second_pred]]) |> 
   group_map(
     \(d, g) {
-      txt <- glue("#### `r as.character(g[[second_pred]])`\n\n```{r}\n#| output: asis\n#| echo: false\ngt::gt(d) \n```\n", .open = "<<", .close = ">>")
+      txt <- glue("\n###### `r as.character(g[[second_pred]])`\n\n```{r}\n#| output: asis\n#| echo: false\n\ngt::gt(d)\n```\n\n", .open = "<<", .close = ">>")
       knitr::knit_child(text = txt, envir = new.env(parent = environment()), quiet = TRUE)
     }
   ) |> unlist() |> cat(sep = '\n')
@@ -180,13 +180,13 @@ cont_inter2@grid <- rename_with(cont_inter2@grid, \(c) stringr::str_remove(c, pa
 #| echo: false
 #| output: asis
 
-cat(":::{.panel-tabset}\n")
+cat("::: {.panel-tabset}\n\n") # TODO: group="facet"
 
 as.data.frame(cont_inter2) |> 
   group_by(.data[[second_pred]]) |> 
   group_map(
     \(d, g) {
-      txt <- glue("#### `r as.character(g[[second_pred]])`\n\n```{r}\n#| output: asis\n#| echo: false\ngt::gt(d) \n```\n", .open = "<<", .close = ">>")
+      txt <- glue("\n###### `r as.character(g[[second_pred]])`\n\n```{r}\n#| output: asis\n#| echo: false\n\ngt::gt(d)\n```\n\n", .open = "<<", .close = ">>")
       knitr::knit_child(text = txt, envir = new.env(parent = environment()), quiet = TRUE)
     }
   ) |> unlist() |> cat(sep = '\n')

@@ -235,8 +235,6 @@ anova_res
 ```
 
 
-❖ Main effects *(Likelihood Ratio Test)*:
-
 ```{r}
 #| echo: false
 #| output: false
@@ -250,19 +248,19 @@ display_lrt <- !is.null(lrt_res)
 ```
 
 ```{r}
+#| eval: !expr display_lrt
+#| echo: false
+#| output: asis
+
+cat("❖ Main effects *(Likelihood Ratio Test)*:\n\n")
+```
+
+```{r}
 #| eval: false
 #| echo: !expr display_lrt
 #| output: asis
 
 LRT(mod, pred = "Condition")
-```
-
-```{r}
-#| eval: !expr (!display_lrt)
-#| echo: false
-#| output: asis
-
-cat("*Likelihood Ratio is impossible to compute for this model ...*")
 ```
 
 ```{r}
@@ -273,23 +271,28 @@ cat("*Likelihood Ratio is impossible to compute for this model ...*")
 as.data.frame(lrt_res) |> print_html()
 ```
 
-::: {.column-margin}
+```{r}
+#| eval: !expr display_lrt
+#| echo: false
+#| output: asis
 
-:::{.callout-important}
-Our `LRT()` method removes the predictor *plus* all its interactions
-:::
+cat("::: {.column-margin}\n\n")
 
-:::
+cat(":::{.callout-important}\n")
+cat("Our `LRT()` method removes the predictor *plus* all its interactions\n")
+cat(":::\n\n")
+
+cat(":::\n")
+```
+
 
 #### Marginal Effects
 
 Marginal means & Contrasts for each predictor:
 
-::: {.panel-tabset}
-
 ```{r}
 #| echo: false
-#| output: asis
+#| output: false
 
 preds_and_inters <- (union(
     insight::find_predictors(mod, effects = "fixed", component = "conditional")$conditional, 
@@ -298,6 +301,14 @@ preds_and_inters <- (union(
   |> setdiff(insight::find_offset(mod)) 
   |> stringr::str_replace_all("[1-9]", "")
 )
+```
+
+
+::: {.panel-tabset}
+
+```{r}
+#| echo: false
+#| output: asis
 
 purrr::map(
   seq(1, length(preds_and_inters)),

@@ -4,11 +4,13 @@
 
 source(here::here("src", "init.R"), echo = FALSE)
 
+current_data <- insight::get_data(mod)
+
 is_inter <- stringr::str_detect(pred, pattern = ":")
 
 if (is_inter) {
   inter_preds <- stringr::str_split(pred, pattern = ":")  |> purrr::flatten_chr()
-  time <- stringr::str_subset(inter_preds, "Condition", negate = TRUE)[[1]]
+  time <- setdiff(inter_preds, "Condition")[1]
   
   plot_width <- 2.5 + purrr::reduce(inter_preds, \(acc, c) acc * n_distinct(data[[c]]), .init = 1)
   
@@ -62,13 +64,13 @@ emmeans(mod, specs = emmeans_formula, type = "response")
 
 emm_inter <- emmeans(mod, specs = emmeans_formula, type = "response")
 
-cat(":::{.panel-tabset}\n")
+cat("::: {.panel-tabset}\n\n") # TODO: group="facet"
 
 as.data.frame(emm_inter) |> 
-  group_by(.data[[second_pred]]) |> 
+  group_by(.data[[time]]) |> 
   group_map(
     \(d, g) {
-      txt <- glue("#### `r as.character(g[[second_pred]])`\n\n```{r}\n#| output: asis\n#| echo: false\ngt::gt(d) \n```\n", .open = "<<", .close = ">>")
+      txt <- glue("\n###### `r as.character(g[[time]])`\n\n```{r}\n#| output: asis\n#| echo: false\n\ngt::gt(d)\n```\n\n", .open = "<<", .close = ">>")
       knitr::knit_child(text = txt, envir = new.env(parent = environment()), quiet = TRUE)
     }
   ) |> unlist() |> cat(sep = '\n')
@@ -130,13 +132,13 @@ emmeans(mod, specs = emmeans_formula, type = "response") |>
 cont_inter <- emmeans(mod, specs = emmeans_formula, type = "response") |> 
   contrast(method = "pairwise", adjust = "none", infer = TRUE)
 
-cat(":::{.panel-tabset}\n")
+cat("::: {.panel-tabset}\n\n") # TODO: group="facet"
 
 as.data.frame(cont_inter) |> 
-  group_by(.data[[second_pred]]) |> 
+  group_by(.data[[time]]) |> 
   group_map(
     \(d, g) {
-      txt <- glue("#### `r as.character(g[[second_pred]])`\n\n```{r}\n#| output: asis\n#| echo: false\ngt::gt(d) \n```\n", .open = "<<", .close = ">>")
+      txt <- glue("\n###### `r as.character(g[[time]])`\n\n```{r}\n#| output: asis\n#| echo: false\n\ngt::gt(d)\n```\n\n", .open = "<<", .close = ">>")
       knitr::knit_child(text = txt, envir = new.env(parent = environment()), quiet = TRUE)
     }
   ) |> unlist() |> cat(sep = '\n')

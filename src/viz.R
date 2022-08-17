@@ -683,7 +683,7 @@ modeled_temporal_plot <- function(
      data = p_data,
      aes_string(label = "p.signif", x = time, y = "pos.y"),
      vjust = 0.5, hjust = 0.5,
-     size = 5, color = "black"
+     size = 5, color = color_text_bi
     )
     + labs(y = resp_name %||% get_response_name(resp))
     + theme(

@@ -60,8 +60,14 @@ models <- list(
     family = Gamma("identity"),
     data = data,
     REML = TRUE,
-    start = list(beta = c(I(mean(data$Time_GR)), rep(0, 19))),
-    control = glmmTMBControl(optimizer = optim, optArgs = list(method = "BFGS"))
+    start = list(beta = c(I(mean(data$Time_GR)), rep(0, 19)))
+  ),
+  glmmTMB(
+    Time_GR ~ Condition * Stage + ar1(Stage + 0 | Mouse),
+    family = gaussian("identity"),
+    data = data,
+    REML = TRUE,
+    start = list(beta = c(I(mean(data$Time_GR)), rep(0, 19)))
   )
 )
 ```

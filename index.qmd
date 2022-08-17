@@ -24,7 +24,7 @@ Each candidate model is split in its own tab.
 
 ### Disclaimer on the presence of multiple models
 
-We chose to (sometimes) display several candidate models for each variable of interest for the sake of exploration. However, the model we ended up using for testing our hypotheses was picked mainly based on theoretical criteria, and not through significance testing (to avoid losses of generalizability). The overall quality of fit of each candidate model was also taken into account in that decision, through the use of residuals and predictive plots.
+We chose to (sometimes) display several candidate models for each variable of interest for the sake of exploration, and to asses the robustness of our inferences to model assumptions. However, the model we used for testing our hypotheses was picked mainly based on theoretical criteria, also taking into account the model's quality of fit (evaluated through residual and predictive plots).
 :::
 
 

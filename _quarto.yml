@@ -6,7 +6,7 @@ project:
 
 book:
   title: "Intermittent hypoxia and cerebellar development"
-  subtitle: "R analysis code"
+  subtitle: "Data & R analysis code"
   date: "2022-05-01"
   author:
     - name: "Marc-Aurèle Rivière"
