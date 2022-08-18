@@ -30,7 +30,7 @@ Data and R companion code for (Leroux S., Rodriguez-Duboc A., Arabo A., Basille-
 - `docs`: The [webpage](https://ma-riviere.github.io/LT-AoP-22/) version of this repository, hosted through GitHub pages.
   - This webpage showcases the code of the project (and output of said code) in a more accessible manner.
 - `quarto`: The quarto files (.qmd) used to generate the [webpage](https://ma-riviere.github.io/LT-AoP-22/) of this repository.
-  - Reading and knitting .qmd files requires R Studio *v2022.02* or newer (in version *2022.02*, Quarto has to be enabled in the Global Options *R Markdown -> Quarto*).
+  - Reading and knitting .qmd files requires R Studio *v2022.02* or newer (in version *2022.02*, Quarto has to be enabled in the Global Options *R Markdown -> Quarto*). Please refer to [Quarto's documentation](https://quarto.org/docs/get-started/) for more information.
 - `R`: R scripts declaring the functions called withing the analysis files (e.g. `viz.R` for the figures, `data.R` for the data loading).
 - `config.yml`: Indexes the paths to various external files used within the code (e.g. data, templates, ...).
 
