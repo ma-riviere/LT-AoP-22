@@ -22,6 +22,7 @@ Data and R companion code for (Leroux S., Rodriguez-Duboc A., Arabo A., Basille-
 
 - R version 4.1 or newer (4.2.1 recommended)
 - R Studio version 2022.02 or newer (2022.07 recommended)
+- Quarto version 0.9.399
 
 ## 💻 Repository structure:
 
