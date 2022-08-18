@@ -4,23 +4,24 @@
  <h3><i>Main branch</i></h3>
 
  [![License](https://img.shields.io/badge/license-CCBY-blue.svg)](/LICENSE)
- [![DOI](https://zenodo.org/badge/484983414.svg)](https://zenodo.org/badge/latestdoi/484983414)
+ [![DOI Code](https://zenodo.org/badge/484983414.svg)](https://zenodo.org/badge/latestdoi/484983414)
  
  <a href = "https://ma-riviere.github.io/LT-AoP-22/">Link to the documentation</a>
 
 </div>
 
-Data and R companion code for (Leroux S., Rodriguez-Duboc A., Arabo A., Basille-Dugay M., Vaudry D., & Burel D., 2022) paper: *"Hypoxia is associated with a retardation of cerebellar development and long-term functional deficits in a mouse model of apnea of prematurity"*
+Data and R companion code for **Leroux S., Rodriguez-Duboc A., Arabo A., Basille-Dugay M., Vaudry D., & Burel D., 2022**: *"Intermittent hypoxia in a mouse model of apnea of prematurity leads to a retardation of cerebellar development and long-term functional deficits"*
 
 ## 📖 Citation:
 
-- **Paper:** *In Press*  
+- **Paper:** Leroux S, Rodriguez-Duboc A, Arabo A, Basille-Dugay M, Vaudry D, Burel D. Intermittent hypoxia in a mouse model of apnea of prematurity leads to a retardation of cerebellar development and long-term functional deficits. Cell & Bioscience. 2022.
 
 - **Code:** Marc-Aurèle Rivière, & Agalic Rodriguez-Duboc. (2022). ma-riviere/LT-AoP-22: final release (v2.0). Zenodo. https://doi.org/10.5281/zenodo.6480947
 
 ## ❔ Requirements:
 
 - R version 4.1 or newer (4.2.1 recommended)
+- R Studio version 2022.02 or newer
 
 ## 💻 Repository structure:
 
