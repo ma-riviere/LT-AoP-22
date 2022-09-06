@@ -10,11 +10,13 @@
 
 </div>
 
-Data and R companion code for **Leroux S., Rodriguez-Duboc A., Arabo A., Basille-Dugay M., Vaudry D., & Burel D., 2022**: *"Intermittent hypoxia in a mouse model of apnea of prematurity leads to a retardation of cerebellar development and long-term functional deficits"*
+> **Note**  
+> This repository contains the data and R code for **Leroux S., Rodriguez-Duboc A., Arabo A., Basille-Dugay M., Vaudry D., & Burel D., 2022**: <br>
+  *"Intermittent hypoxia in a mouse model of apnea of prematurity leads to a retardation of cerebellar development and long-term functional deficits"*
 
 ## 📖 Citation:
 
-- **Paper:** Leroux S, Rodriguez-Duboc A, Arabo A, Basille-Dugay M, Vaudry D, Burel D. Intermittent hypoxia in a mouse model of apnea of prematurity leads to a retardation of cerebellar development and long-term functional deficits. Cell & Bioscience. 2022.
+- **Paper:** Leroux S, Rodriguez-Duboc A, Arabo A, Basille-Dugay M, Vaudry D, Burel D. Intermittent hypoxia in a mouse model of apnea of prematurity leads to a retardation of cerebellar development and long-term functional deficits. Cell Biosci. 2022 Sep 6;12(1):148. https://doi.org/10.1186/s13578-022-00869-5
 
 - **Code:** Marc-Aurèle Rivière, & Agalic Rodriguez-Duboc. (2022). ma-riviere/LT-AoP-22: final release (v2.0). Zenodo. https://doi.org/10.5281/zenodo.6480947
 
