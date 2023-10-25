@@ -1,0 +1,18 @@
+# This CITATION.cff file was generated with Zotero.
+
+cff-version: 1.2.0
+message: >-
+  If you use this software, please cite it using the metadata from this file.
+title:  >-
+  ma-riviere/LT-AoP-22: Final release
+abstract: Data & R code associated with Leroux et al. (2022)
+type: software
+license: Creative Commons Attribution 4.0 International, Open Access
+version: v2.0
+url: https://zenodo.org/record/6480947
+authors: 
+  - family-names: Rivière
+    given-names: Marc-Aurèle
+  - family-names: Rodriguez-Duboc
+    given-names: Agalic
+date-released: 2022-09-06

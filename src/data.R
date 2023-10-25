@@ -325,7 +325,7 @@ load_Weight <- function(path = config$data$IHC$weight_path, age = "All") {
     return(
       purrr::map_df(
         .x = readxl::excel_sheets(path) |> rlang::set_names(), 
-        .f = \(.x) load_Weights(path = path, age = .x)
+        .f = \(.x) load_Weight(path = path, age = .x)
         # .id = "Age"
       )
     )
